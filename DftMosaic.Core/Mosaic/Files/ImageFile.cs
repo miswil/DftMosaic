@@ -5,6 +5,42 @@ namespace DftMosaic.Core.Mosaic.Files
 {
     public class ImageFile
     {
+        public static readonly IReadOnlyList<(string Description, string Extensions)> ReadableFileFormats
+            = new List<(string Description, string Extensions)>
+            {
+                ("Windows bitmaps", "*.bmp; *.dib"),
+                ("JPEG files", "*.jpeg, *.jpg; *.jpe"),
+                ("JPEG 2000 files", "*.jp2"),
+                ("Portable Network Graphics", "*.png"),
+                ("TIFF files", "*.tiff; *.tif")
+            }.AsReadOnly();
+
+        public static bool IsReadableFileFormats(string extension)
+            => ExtensionMatch(ReadableFileFormats, extension);
+
+        public static readonly IReadOnlyList<(string Description, string Extensions)> MosaicWritableFileFormats
+            = new List<(string Description, string Extensions)>
+            {
+                ("Portable Network Graphics", "*.png"),
+                ("TIFF files", "*.tiff; *.tif")
+            }.AsReadOnly();
+
+        public static bool IsMosaicWritableFileFormats(string extension)
+            => ExtensionMatch(MosaicWritableFileFormats, extension);
+
+        public static readonly IReadOnlyList<(string Description, string Extensions)> UnmosaicWritableFileFormats
+            = new List<(string Description, string Extensions)>
+            {
+                ("Windows bitmaps", "*.bmp; *.dib"),
+                ("JPEG files", "*.jpeg, *.jpg; *.jpe"),
+                ("JPEG 2000 files", "*.jp2"),
+                ("Portable Network Graphics", "*.png"),
+                ("TIFF files", "*.tiff; *.tif")
+            }.AsReadOnly();
+
+        public static bool IsUnmosaicWritableFileFormats(string extension)
+            => ExtensionMatch(UnmosaicWritableFileFormats, extension);
+
         public Mat Image { get; private set; }
         public MetaData MetaData { get; private set; }
 
@@ -57,6 +93,16 @@ namespace DftMosaic.Core.Mosaic.Files
             }
             var mosaicInfo = JsonConvert.DeserializeObject<MosaicInfo>(this.MetaData.Comment);
             return new Unmosaicer(this.Image, mosaicInfo.Area, mosaicInfo.Type, mosaicInfo.Scale);
+        }
+
+        private static bool ExtensionMatch(IReadOnlyList<(string Description, string Extensions)> formats, string extension)
+        {
+            extension = extension.ToLower();
+            return formats
+                .Select(f => f.Extensions.Split(';'))
+                .SelectMany(ext => ext)
+                .Select(ext => ext.Trim().Trim('*'))
+                .FirstOrDefault(ext => ext.ToLower() == extension) != null;
         }
     }
 }
