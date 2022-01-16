@@ -5,6 +5,7 @@ using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using OpenCvSharp.WpfExtensions;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -118,7 +119,12 @@ namespace DftMosaic.Desktop
 
         private void SelectImageCommandExecute()
         {
-            var message = new GetOpenFileMessage();
+            var message = new GetOpenFileMessage
+            {
+                Filter = ImageFile.ReadableFileFormats
+                    .Select(format => $"{format.Description}|{format.Extensions}")
+                    .Aggregate((fst, scd) => $"{fst}|{scd}"),
+            };
             WeakReferenceMessenger.Default.Send(message);
             if (message.FileName is not null)
             {
@@ -128,7 +134,12 @@ namespace DftMosaic.Desktop
 
         private void SaveCommandExecute()
         {
-            var message = new GetSaveFileMessage();
+            var message = new GetSaveFileMessage
+            {
+                Filter = ImageFile.MosaicWritableFileFormats
+                    .Select(format => $"{format.Description}|{format.Extensions}")
+                    .Aggregate((fst, scd) => $"{fst}|{scd}"),
+            };
             WeakReferenceMessenger.Default.Send(message);
             if (message.FileName is not null)
             {
