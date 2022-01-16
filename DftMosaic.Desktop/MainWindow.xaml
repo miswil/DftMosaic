@@ -1,0 +1,236 @@
+﻿<mah:MetroWindow x:Class="DftMosaic.Desktop.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:local="clr-namespace:DftMosaic.Desktop"
+                 xmlns:dragablz="clr-namespace:Dragablz;assembly=Dragablz"
+                 xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                 xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+                 xmlns:b="clr-namespace:DftMosaic.Desktop.Xaml.Behaviors"
+                 xmlns:c="clr-namespace:DftMosaic.Desktop.Xaml.Controllers"
+                 xmlns:core="clr-namespace:DftMosaic.Core.Mosaic;assembly=DftMosaic.Core" xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+                 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                 mc:Ignorable="d"
+                 GlowBrush="{DynamicResource AccentColorBrush}"
+                 BorderThickness="1"
+                 Height="450" Width="800">
+    <Window.DataContext>
+        <local:MainWindowViewModel/>
+    </Window.DataContext>
+    <i:Interaction.Behaviors>
+        <b:GetOpenFileBehavior/>
+        <b:GetSaveFileBehavior/>
+    </i:Interaction.Behaviors>
+    <DockPanel>
+        <StatusBar DockPanel.Dock="Bottom">
+            <TextBlock Text="{Binding ImageFilePath}"/>
+            <Separator/>
+            <StackPanel Orientation="Horizontal">
+                <Slider Width="100" Foreground="White" VerticalAlignment="Center" Margin="10,0"
+                        Minimum="10" Maximum="200" Value="{Binding ZoomScale, Mode=TwoWay, ElementName=OriginalImageZoomBehavior, StringFormat={}{0} %}"/>
+                <ComboBox Text="{Binding ZoomScale, Mode=TwoWay, ElementName=OriginalImageZoomBehavior, StringFormat={}{0} %}"
+                          IsEditable="True" ItemStringFormat="{}{0}%">
+                    <ComboBox.ItemsSource>
+                        <x:Array Type="{x:Type sys:Int32}">
+                            <sys:Int32>20</sys:Int32>
+                            <sys:Int32>50</sys:Int32>
+                            <sys:Int32>70</sys:Int32>
+                            <sys:Int32>100</sys:Int32>
+                            <sys:Int32>150</sys:Int32>
+                            <sys:Int32>200</sys:Int32>
+                        </x:Array>
+                    </ComboBox.ItemsSource>
+                </ComboBox>
+            </StackPanel>
+            <Separator/>
+            <TextBlock Text="{Binding MosaicArea, Converter={StaticResource RectToIntegerStringConverter}}"/>
+        </StatusBar>
+        <GroupBox DockPanel.Dock="Right">
+            <GroupBox.Header>
+                <TextBlock Text="変換モード" FontSize="25"/>
+            </GroupBox.Header>
+            <StackPanel>
+                <StackPanel>
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type RadioButton}">
+                            <Setter Property="FontSize" Value="20"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        </Style>
+                    </StackPanel.Resources>
+                    <RadioButton GroupName="MosaicType"
+                                 IsChecked="{Binding MosaicType, 
+                                    Converter={StaticResource BooleanToEnumConverter},
+                                    ConverterParameter={x:Static core:MosaicType.GrayScale}}"
+                                 Content="白黒"/>
+                    <RadioButton GroupName="MosaicType"
+                                 IsChecked="{Binding MosaicType, 
+                                    Converter={StaticResource BooleanToEnumConverter},
+                                    ConverterParameter={x:Static core:MosaicType.Color}}"
+                                 Content="カラー"/>
+                    <RadioButton GroupName="MosaicType"
+                                 IsChecked="{Binding MosaicType, 
+                                    Converter={StaticResource BooleanToEnumConverter},
+                                    ConverterParameter={x:Static core:MosaicType.ShortColor}}"
+                                 Content="カラー（小サイズ）"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                            <Setter Property="Margin" Value="10"/>
+                        </Style>
+                    </StackPanel.Resources>
+                    <Button Command="{Binding MosaicCommand}">
+                        <TextBlock FontSize="20">モザイク</TextBlock>
+                    </Button>
+                    <Button Command="{Binding SaveCommand}">
+                        <TextBlock FontSize="20">保存</TextBlock>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+        <dragablz:TabablzControl SelectedIndex="{Binding ShowingImageIndex}"
+                                 AllowDrop="True">
+            <dragablz:TabablzControl.Resources>
+                <ResourceDictionary>
+                    <Style x:Key="CommonScrollViewStyle" TargetType="{x:Type ScrollViewer}">
+                        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                        <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+                    </Style>
+                    <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource CommonScrollViewStyle}"/>
+                    <Style TargetType="{x:Type Image}">
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                    </Style>
+                </ResourceDictionary>
+            </dragablz:TabablzControl.Resources>
+            <TabItem>
+                <TabItem.Header>
+                    <TextBlock FontSize="20">元画像</TextBlock>
+                </TabItem.Header>
+                <Grid>
+                    <Button Command="{Binding SelectImageCommand}">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Visibility, ElementName=OriginalImageScroller}" Value="Visible">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+                                                    VerticalAlignment="{TemplateBinding VerticalAlignment}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    Background="{TemplateBinding Background}"
+                                                    Cursor="{TemplateBinding Cursor}">
+                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                                  Cursor="{TemplateBinding Cursor}"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                        クリックして画像を選択、または画像をドロップしてください。
+                    </Button>
+                    <ScrollViewer x:Name="OriginalImageScroller"
+                                  b:SyncScrollBehavior.SyncGroup="Image">
+                        <ScrollViewer.Style>
+                            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource CommonScrollViewStyle}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Source, ElementName=OriginalImage}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ScrollViewer.Style>
+                        <Image x:Name="OriginalImage"
+                               Source="{Binding OriginalImage}">
+                            <Image.LayoutTransform>
+                                <ScaleTransform />
+                            </Image.LayoutTransform>
+                            <i:Interaction.Behaviors>
+                                <b:ClippingBehavior ClippedArea="{Binding MosaicArea, Mode=TwoWay}"/>
+                            </i:Interaction.Behaviors>
+                        </Image>
+                        <i:Interaction.Behaviors>
+                            <b:ScrollViewerContentZoomBehavior x:Name="OriginalImageZoomBehavior"/>
+                            <b:RightClickPanBehavior/>
+                        </i:Interaction.Behaviors>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+            <TabItem>
+                <TabItem.Style>
+                    <Style TargetType="{x:Type TabItem}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Source, ElementName=MosaicedImage}" Value="{x:Null}">
+                                <Setter Property="IsEnabled" Value="False"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TabItem.Style>
+                <TabItem.Header>
+                    <TextBlock FontSize="20">モザイクプレビュー</TextBlock>
+                </TabItem.Header>
+                <ScrollViewer b:SyncScrollBehavior.SyncGroup="Image">
+                    <Image x:Name="MosaicedImage"
+                           Source="{Binding MosaicedImage}">
+                        <Image.LayoutTransform>
+                            <ScaleTransform />
+                        </Image.LayoutTransform>
+                    </Image>
+                    <i:Interaction.Behaviors>
+                        <b:ScrollViewerContentZoomBehavior ZoomScale="{Binding ZoomScale, Mode=TwoWay, ElementName=OriginalImageZoomBehavior}"/>
+                        <b:RightClickPanBehavior/>
+                    </i:Interaction.Behaviors>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem>
+                <TabItem.Style>
+                    <Style TargetType="{x:Type TabItem}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Source, ElementName=UnmosaicedImage}" Value="{x:Null}">
+                                <Setter Property="IsEnabled" Value="False"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TabItem.Style>
+                <TabItem.Header>
+                    <TextBlock FontSize="20">モザイク消しプレビュー</TextBlock>
+                </TabItem.Header>
+                <ScrollViewer b:SyncScrollBehavior.SyncGroup="Image">
+                    <Image x:Name="UnmosaicedImage"
+                           Source="{Binding UnmosaicedImage}">
+                        <Image.LayoutTransform>
+                            <ScaleTransform />
+                        </Image.LayoutTransform>
+                    </Image>
+                    <i:Interaction.Behaviors>
+                        <b:ScrollViewerContentZoomBehavior ZoomScale="{Binding ZoomScale, Mode=TwoWay, ElementName=OriginalImageZoomBehavior}"/>
+                        <b:RightClickPanBehavior/>
+                    </i:Interaction.Behaviors>
+                </ScrollViewer>
+            </TabItem>
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Drop">
+                    <i:EventTrigger.Actions>
+                        <i:InvokeCommandAction Command="{Binding ImageSelectedCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger.Actions>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </dragablz:TabablzControl>
+    </DockPanel>
+</mah:MetroWindow>

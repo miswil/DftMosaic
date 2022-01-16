@@ -1,0 +1,5 @@
+.vs/
+**/bin
+**/
+**/launchSettings.json
+**/*.csproj.user
