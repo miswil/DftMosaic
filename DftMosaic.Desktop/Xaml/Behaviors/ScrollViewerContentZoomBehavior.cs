@@ -92,12 +92,13 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             var getTemplateChild = typeof(ScrollViewer).GetMethod("GetTemplateChild", BindingFlags.Instance | BindingFlags.NonPublic);
             var getVisualChild = typeof(ScrollContentPresenter).GetMethod("GetVisualChild", BindingFlags.Instance | BindingFlags.NonPublic);
             var contentPresenter = getTemplateChild?.Invoke(scrollViewer, new[] { "PART_ScrollContentPresenter" });
-            if (contentPresenter is null)
+            if (contentPresenter is not null)
             {
-                return null;
+                var scaledElement = getVisualChild?.Invoke(contentPresenter, new[] { (object)0 }) as FrameworkElement;
+                return scaledElement;
             }
-            var scaledElement = getVisualChild?.Invoke(contentPresenter, new[] { (object)0 }) as FrameworkElement;
-            return scaledElement;
+            // content presenter not generated yet, fallback
+            return scrollViewer.Content as FrameworkElement;
         }
     }
 }
