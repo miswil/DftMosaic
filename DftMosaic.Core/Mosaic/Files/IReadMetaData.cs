@@ -2,6 +2,6 @@
 {
     internal interface IReadMetaData
     {
-        MetaData Load(string filePath);
+        MetaData? Load(string filePath);
     }
 }
