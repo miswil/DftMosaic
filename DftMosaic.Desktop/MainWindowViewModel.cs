@@ -1,10 +1,12 @@
 ﻿using DftMosaic.Core.Mosaic;
 using DftMosaic.Core.Mosaic.Files;
 using DftMosaic.Desktop.Messaging;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using OpenCvSharp.WpfExtensions;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -86,6 +88,8 @@ namespace DftMosaic.Desktop
             }
         }
 
+        public SnackbarMessageQueue MessageQueue { get; } = new SnackbarMessageQueue();
+
         public MainWindowViewModel()
         {
             this.showingImageIndex = 0;
@@ -97,7 +101,19 @@ namespace DftMosaic.Desktop
 
         public void ShowImageFile(string filePath)
         {
-            this.OriginalImageFile = new ImageFile(filePath);
+            try
+            {
+                this.OriginalImageFile = new ImageFile(filePath);
+            }
+            catch (ImageFormatNotSupportedException ex)
+            {
+                this.MessageQueue.Enqueue(new FormatErrorMessageViewModel
+                {
+                    SupportedFormats = String.Join("\n", ex.SupportedFormats
+                        .Select(f => $"{f.Description}:     {string.Join(", ", f.Extensions)}")),
+                });
+                return;
+            }
             this.OriginalImage = this.originalImageFile.Image.ToBitmapSource();
             this.ImageFilePath = filePath;
             this.mosaicer = null;
@@ -143,7 +159,19 @@ namespace DftMosaic.Desktop
             WeakReferenceMessenger.Default.Send(message);
             if (message.FileName is not null)
             {
-                new ImageFile(this.mosaicer).Save(message.FileName);
+                try
+                {
+                    new ImageFile(this.mosaicer).Save(message.FileName);
+                }
+                catch (ImageFormatNotSupportedException ex)
+                {
+                    this.MessageQueue.Enqueue(new FormatErrorMessageViewModel
+                    {
+                        SupportedFormats = String.Join("\n", ex.SupportedFormats
+                            .Select(f => $"{f.Description}:     {string.Join(", ", f.Extensions)}")),
+                    });
+                    return;
+                }
             }
 
         }

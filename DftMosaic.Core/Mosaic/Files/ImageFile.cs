@@ -51,7 +51,9 @@ namespace DftMosaic.Core.Mosaic.Files
             var extension = Path.GetExtension(filePath);
             if (!IsReadableFileFormats(extension))
             {
-                throw new NotSupportedException($"{extension} is not a supported image format.");
+                throw new ImageFormatNotSupportedException(
+                    $"{extension} is not a supported image format.",
+                    ReadableFileFormats);
             }
 
             this.Image = Cv2.ImRead(filePath, ImreadModes.Unchanged | ImreadModes.AnyDepth);
@@ -92,11 +94,15 @@ namespace DftMosaic.Core.Mosaic.Files
             var extension = Path.GetExtension(filePath);
             if (this.IsMosaiced && !IsMosaicWritableFileFormats(extension))
             {
-                throw new NotSupportedException($"{extension} is not a supported image format.");
+                throw new ImageFormatNotSupportedException(
+                    $"{extension} is not a supported image format.",
+                    MosaicWritableFileFormats);
             }
             if (!this.IsMosaiced && !IsUnmosaicWritableFileFormats(extension))
             {
-                throw new NotSupportedException($"{extension} is not a supported image format.");
+                throw new ImageFormatNotSupportedException(
+                    $"{extension} is not a supported image format.",
+                    UnmosaicWritableFileFormats);
             }
 
             Cv2.ImWrite(filePath, this.Image);
