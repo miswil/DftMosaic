@@ -4,7 +4,7 @@ namespace DftMosaic.Core.Mosaic.Files.Png
 {
     internal class PngMetaDataReader : IReadMetaData
     {
-        public MetaData Load(string filePath)
+        public MetaData? Load(string filePath)
         {
             if (Path.GetExtension(filePath) is not ".png")
             {
@@ -14,10 +14,15 @@ namespace DftMosaic.Core.Mosaic.Files.Png
             file.Seek(8, SeekOrigin.Begin); // skip header
             var chunks = this.ReadChunk(file);
 
-            return new MetaData
+            var comment = chunks.ITxts?.FirstOrDefault(t => t.Keyword is "Comment")?.Text;
+            if (comment is null)
             {
-                Comment = chunks.ITxts?.FirstOrDefault(t => t.Keyword is "Comment")?.Text,
-            };
+                return null;
+            }
+            else
+            {
+                return new MetaData(comment);
+            }
         }
 
         private PngChunkCollection ReadChunk(Stream stream)

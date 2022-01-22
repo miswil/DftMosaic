@@ -2,6 +2,10 @@
 {
     public class MetaData
     {
-        public string? Comment { get; set; }
+        public MetaData(string comment)
+        {
+            this.Comment = comment;
+        }
+        public string Comment { get; }
     }
 }
