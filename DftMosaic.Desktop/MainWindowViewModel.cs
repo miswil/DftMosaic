@@ -1,5 +1,5 @@
-﻿using DftMosaic.Core.Mosaic;
-using DftMosaic.Core.Mosaic.Files;
+﻿using DftMosaic.Core.Files;
+using DftMosaic.Core.Images;
 using DftMosaic.Desktop.Messaging;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
@@ -16,8 +16,6 @@ namespace DftMosaic.Desktop
 {
     internal class MainWindowViewModel : ObservableObject
     {
-        private Mosaicer? mosaicer;
-
         public IRelayCommand MosaicCommand { get; }
 
         public IRelayCommand SaveCommand { get; }
@@ -28,14 +26,36 @@ namespace DftMosaic.Desktop
 
         public IRelayCommand ImageSelectedCommand { get; }
 
-        private ImageFile? originalImageFile;
-        private ImageFile? OriginalImageFile
+        private Image? originalImage;
+        public Image? OriginalImage
         {
-            get => originalImageFile;
+            get => originalImage;
             set
             {
-                originalImageFile = value;
+                originalImage = value;
                 this.MosaicCommand.NotifyCanExecuteChanged();
+            }
+        }
+
+        private Image? mosaicedImage;
+        public Image? MosaicedImage
+        {
+            get => this.mosaicedImage;
+            set
+            {
+                this.mosaicedImage = value;
+                this.SaveCommand.NotifyCanExecuteChanged();
+            }
+        }
+
+        private Image? unmosaicedImage;
+        public Image? UnmosaicedImage
+        {
+            get => this.unmosaicedImage;
+            set
+            {
+                this.unmosaicedImage= value;
+                this.SaveCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -48,29 +68,25 @@ namespace DftMosaic.Desktop
 
         public MosaicType MosaicType { get; set; } = MosaicType.GrayScale;
 
-        private ImageSource? originalImage;
-        public ImageSource? OriginalImage
+        private ImageSource? originalImageSource;
+        public ImageSource? OriginalImageSource
         {
-            get => this.originalImage;
-            set => this.SetProperty(ref this.originalImage, value);
+            get => this.originalImageSource;
+            private set => this.SetProperty(ref this.originalImageSource, value);
         }
 
-        private ImageSource? mosaicedImage;
-        public ImageSource? MosaicedImage
+        private ImageSource? mosaicedImageSource;
+        public ImageSource? MosaicedImageSource
         {
-            get => this.mosaicedImage;
-            set
-            {
-                this.SetProperty(ref this.mosaicedImage, value);
-                this.SaveCommand.NotifyCanExecuteChanged();
-            }
+            get => this.mosaicedImageSource;
+            private set => this.SetProperty(ref this.mosaicedImageSource, value);
         }
 
-        private ImageSource? unmosaicedImage;
-        public ImageSource? UnmosaicedImage
+        private ImageSource? unmosaicedImageSource;
+        public ImageSource? UnmosaicedImageSource
         {
-            get => this.unmosaicedImage;
-            set => this.SetProperty(ref this.unmosaicedImage, value);
+            get => this.unmosaicedImageSource;
+            private set => this.SetProperty(ref this.unmosaicedImageSource, value);
         }
 
         private string? imageFilePath;
@@ -107,7 +123,7 @@ namespace DftMosaic.Desktop
         {
             try
             {
-                this.OriginalImageFile = new ImageFile(filePath);
+                this.OriginalImage = new ImageFileService().Load(filePath);
             }
             catch (ImageFormatNotSupportedException ex)
             {
@@ -118,11 +134,12 @@ namespace DftMosaic.Desktop
                 });
                 return;
             }
-            this.OriginalImage = this.originalImageFile.Image.ToBitmapSource();
+            this.OriginalImageSource = this.OriginalImage.Data.ToBitmapSource();
             this.ImageFilePath = filePath;
-            this.mosaicer = null;
             this.MosaicedImage = null;
-            this.UnmosaicedImage = null;
+            this.MosaicedImageSource = null;
+            this.unmosaicedImage = null;
+            this.UnmosaicedImageSource = null;
             this.MosaicCommand.NotifyCanExecuteChanged();
             this.SaveCommand.NotifyCanExecuteChanged();
         }
@@ -161,14 +178,14 @@ namespace DftMosaic.Desktop
                 return false;
             }
             var extension = Path.GetExtension(file);
-            return ImageFile.IsReadableFileFormats(extension);
+            return ImageFileFormat.IsReadableFileFormats(extension);
         }
 
         private void SelectImageCommandExecute()
         {
             var message = new GetOpenFileMessage
             {
-                Filter = ImageFile.ReadableFileFormats
+                Filter = ImageFileFormat.ReadableFileFormats
                     .Select(format => $"{format.Description}|{string.Join("; ", format.Extensions.Select(ex => $"*{ex}"))}")
                     .Aggregate((fst, scd) => $"{fst}|{scd}"),
             };
@@ -183,7 +200,7 @@ namespace DftMosaic.Desktop
         {
             var message = new GetSaveFileMessage
             {
-                Filter = ImageFile.MosaicWritableFileFormats
+                Filter = ImageFileFormat.MosaicWritableFileFormats
                     .Select(format => $"{format.Description}|{string.Join("; ", format.Extensions.Select(ex => $"*{ex}"))}")
                     .Aggregate((fst, scd) => $"{fst}|{scd}"),
             };
@@ -192,7 +209,8 @@ namespace DftMosaic.Desktop
             {
                 try
                 {
-                    new ImageFile(this.mosaicer).Save(message.FileName);
+                    var imageFileService = new ImageFileService();
+                    imageFileService.Save(this.mosaicedImage, message.FileName);
                 }
                 catch (ImageFormatNotSupportedException ex)
                 {
@@ -214,7 +232,7 @@ namespace DftMosaic.Desktop
 
         private void MosaicCommandExecute()
         {
-            if (this.originalImageFile is null)
+            if (this.originalImage is null)
             {
                 return;
             }
@@ -222,20 +240,19 @@ namespace DftMosaic.Desktop
             {
                 return;
             }
-            this.mosaicer = this.originalImageFile.ToMosaicer();
-            this.mosaicer.Mosaic(
+
+            this.MosaicedImage = this.OriginalImage.Mosaic(
                 new ((int)mosaicArea.X, (int)mosaicArea.Y, (int)mosaicArea.Width, (int)mosaicArea.Height),
                 this.MosaicType);
-            this.MosaicedImage = this.mosaicer.MosaicedImage.ToBitmapSource();
+            this.MosaicedImageSource = this.MosaicedImage.Data.ToBitmapSource();
 
-            var unmosaicer = new ImageFile(this.mosaicer).ToUnmosaicer();
-            unmosaicer.Unmosaic();
-            this.UnmosaicedImage = unmosaicer.OriginalImage.ToBitmapSource();
+            this.UnmosaicedImage = this.MosaicedImage.Unmosaic();
+            this.UnmosaicedImageSource = this.unmosaicedImage.Data.ToBitmapSource();
         }
 
         private bool MosaicCommandCanExecute()
         {
-            return this.originalImageFile is not null
+            return this.OriginalImage is not null
                 && this.MosaicArea is not null;
         }
     }

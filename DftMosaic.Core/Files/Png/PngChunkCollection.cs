@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace DftMosaic.Core.Mosaic.Files.Png
+namespace DftMosaic.Core.Files.Png
 {
     internal class PngChunkCollection
     {

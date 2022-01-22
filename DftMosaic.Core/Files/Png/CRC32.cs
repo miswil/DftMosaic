@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DftMosaic.Core.Mosaic.Files.Png
+namespace DftMosaic.Core.Files.Png
 {
     internal class CRC32
     {

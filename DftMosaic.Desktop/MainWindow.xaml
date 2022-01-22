@@ -9,7 +9,7 @@
                  xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
                  xmlns:b="clr-namespace:DftMosaic.Desktop.Xaml.Behaviors"
                  xmlns:c="clr-namespace:DftMosaic.Desktop.Xaml.Controllers"
-                 xmlns:core="clr-namespace:DftMosaic.Core.Mosaic;assembly=DftMosaic.Core" xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+                 xmlns:core="clr-namespace:DftMosaic.Core.Images;assembly=DftMosaic.Core" xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
                  xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  mc:Ignorable="d"
                  GlowBrush="{DynamicResource AccentColorBrush}"
@@ -168,7 +168,7 @@
                                 </Style>
                             </ScrollViewer.Style>
                             <Image x:Name="OriginalImage"
-                                   Source="{Binding OriginalImage}">
+                                   Source="{Binding OriginalImageSource}">
                                 <Image.LayoutTransform>
                                     <ScaleTransform />
                                 </Image.LayoutTransform>
@@ -198,7 +198,7 @@
                     </TabItem.Header>
                     <ScrollViewer b:SyncScrollBehavior.SyncGroup="Image">
                         <Image x:Name="MosaicedImage"
-                               Source="{Binding MosaicedImage}">
+                               Source="{Binding MosaicedImageSource}">
                             <Image.LayoutTransform>
                                 <ScaleTransform />
                             </Image.LayoutTransform>
@@ -224,7 +224,7 @@
                     </TabItem.Header>
                     <ScrollViewer b:SyncScrollBehavior.SyncGroup="Image">
                         <Image x:Name="UnmosaicedImage"
-                               Source="{Binding UnmosaicedImage}">
+                               Source="{Binding UnmosaicedImageSource}">
                             <Image.LayoutTransform>
                                 <ScaleTransform />
                             </Image.LayoutTransform>

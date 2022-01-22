@@ -1,5 +1,5 @@
-﻿using DftMosaic.Core.Mosaic;
-using DftMosaic.Core.Mosaic.Files;
+﻿using DftMosaic.Core.Files;
+using DftMosaic.Core.Images;
 using OpenCvSharp;
 using System;
 using System.IO;
@@ -34,12 +34,12 @@ namespace DftMosaic.Cmd
         {
             try
             {
-                var image = new ImageFile(mosaicedFile);
-                var mosaicer = image.ToMosaicer();
-                mosaicer.Mosaic(
+                var imageFileService = new ImageFileService();
+                var image = new ImageFileService().Load(mosaicedFile);
+                var mosaiced = image.Mosaic(
                     (Rect)mosaicArea,
                     mosaicType);
-                new ImageFile(mosaicer).Save(outputFile);
+                imageFileService.Save(mosaiced, outputFile);
             }
             catch (ImageFormatNotSupportedException ex)
             {

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace DftMosaic.Core.Mosaic.Files
+namespace DftMosaic.Core.Files
 {
     public class ImageFormatNotSupportedException : NotSupportedException
     {

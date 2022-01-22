@@ -1,4 +1,4 @@
-﻿namespace DftMosaic.Core.Mosaic
+﻿namespace DftMosaic.Core.Images
 {
     public class MosaicScale
     {

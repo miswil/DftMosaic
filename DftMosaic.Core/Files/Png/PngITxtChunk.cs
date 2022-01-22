@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace DftMosaic.Core.Mosaic.Files.Png
+namespace DftMosaic.Core.Files.Png
 {
     internal record PngITxtChunk : PngChunk
     {

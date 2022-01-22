@@ -1,12 +1,12 @@
 ﻿using ExifLibrary;
 
-namespace DftMosaic.Core.Mosaic.Files.Tiff
+namespace DftMosaic.Core.Files.Tiff
 {
     internal class TiffMetaDataReader : IReadMetaData
     {
         public MetaData? Load(string filePath)
         {
-            var metadata = ExifLibrary.ImageFile.FromFile(filePath);
+            var metadata = ImageFile.FromFile(filePath);
             try
             {
                 var comment = metadata.Properties.Get(ExifTag.WindowsComment);

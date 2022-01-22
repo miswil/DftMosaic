@@ -1,4 +1,5 @@
-﻿using DftMosaic.Core.Mosaic.Files;
+﻿using DftMosaic.Core.Files;
+using DftMosaic.Core.Images;
 using OpenCvSharp;
 
 namespace DftUnmosaic.Cmd
@@ -34,10 +35,10 @@ namespace DftUnmosaic.Cmd
                     $"{Path.GetFileNameWithoutExtension(file)}_inv{extension}");
                 try
                 {
-                    var image = new ImageFile(file);
-                    var unmosaicer = image.ToUnmosaicer();
-                    unmosaicer.Unmosaic();
-                    new ImageFile(unmosaicer).Save(outputFile);
+                    var imageFileService = new ImageFileService();
+                    var image = new ImageFileService().Load(file);
+                    var unmosaiced = image.Unmosaic();
+                    imageFileService.Save(unmosaiced, outputFile);
                 }
                 catch (ImageFormatNotSupportedException ex)
                 {

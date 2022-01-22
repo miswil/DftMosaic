@@ -1,6 +1,6 @@
-﻿namespace DftMosaic.Core.Mosaic.Files
+﻿namespace DftMosaic.Core.Files
 {
-    public class MetaData
+    public record MetaData
     {
         public MetaData(string comment)
         {

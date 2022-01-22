@@ -1,4 +1,4 @@
-﻿namespace DftMosaic.Core.Mosaic.Files.Tiff
+﻿namespace DftMosaic.Core.Files.Tiff
 {
     internal class ExifConstants
     {
