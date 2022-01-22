@@ -7,6 +7,7 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using OpenCvSharp.WpfExtensions;
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -22,6 +23,8 @@ namespace DftMosaic.Desktop
         public IRelayCommand SaveCommand { get; }
 
         public IRelayCommand SelectImageCommand { get; }
+
+        public IRelayCommand ImageSelectingCommand { get; }
 
         public IRelayCommand ImageSelectedCommand { get; }
 
@@ -96,6 +99,7 @@ namespace DftMosaic.Desktop
             this.MosaicCommand = new RelayCommand(this.MosaicCommandExecute, this.MosaicCommandCanExecute);
             this.SaveCommand = new RelayCommand(this.SaveCommandExecute, this.SaveCommandCanExecute);
             this.SelectImageCommand = new RelayCommand(this.SelectImageCommandExecute);
+            this.ImageSelectingCommand = new RelayCommand<DragEventArgs>(this.ImageSelectingCommandExecute);
             this.ImageSelectedCommand = new RelayCommand<DragEventArgs>(this.ImageSelectedCommandExecute);
         }
 
@@ -123,14 +127,41 @@ namespace DftMosaic.Desktop
             this.SaveCommand.NotifyCanExecuteChanged();
         }
 
-        private void ImageSelectedCommandExecute(DragEventArgs? e)
+        private void ImageSelectingCommandExecute(DragEventArgs e)
         {
-            if (e == null)
+            if (this.IsDropable(e))
             {
-                return;
+                e.Effects = DragDropEffects.Copy;
             }
-            var imageFilePath = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
-            this.ShowImageFile(imageFilePath);
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+            e.Handled = true;
+        }
+
+        private void ImageSelectedCommandExecute(DragEventArgs e)
+        {
+            if (this.IsDropable(e))
+            {
+                var imageFilePath = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
+                this.ShowImageFile(imageFilePath);
+            }
+        }
+        
+        private bool IsDropable(DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                return false;
+            }
+            var file = ((string[])e.Data.GetData(DataFormats.FileDrop)).FirstOrDefault();
+            if (file == null)
+            {
+                return false;
+            }
+            var extension = Path.GetExtension(file);
+            return ImageFile.IsReadableFileFormats(extension);
         }
 
         private void SelectImageCommandExecute()

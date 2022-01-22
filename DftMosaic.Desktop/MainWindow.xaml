@@ -231,6 +231,11 @@
                             <i:InvokeCommandAction Command="{Binding ImageSelectedCommand}" PassEventArgsToCommand="True"/>
                         </i:EventTrigger.Actions>
                     </i:EventTrigger>
+                    <i:EventTrigger EventName="DragOver">
+                        <i:EventTrigger.Actions>
+                            <i:InvokeCommandAction Command="{Binding ImageSelectingCommand}" PassEventArgsToCommand="True"/>
+                        </i:EventTrigger.Actions>
+                    </i:EventTrigger>
                 </i:Interaction.Triggers>
             </dragablz:TabablzControl>
         </DockPanel>
