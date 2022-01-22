@@ -3,6 +3,7 @@ using DftMosaic.Core.Mosaic.Files;
 using OpenCvSharp;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace DftMosaic.Cmd
@@ -31,12 +32,22 @@ namespace DftMosaic.Cmd
 
         private static void Convert()
         {
-            var image = new ImageFile(mosaicedFile);
-            var mosaicer = image.ToMosaicer();
-            mosaicer.Mosaic(
-                (Rect)mosaicArea,
-                mosaicType);
-            new ImageFile(mosaicer).Save(outputFile);
+            try
+            {
+                var image = new ImageFile(mosaicedFile);
+                var mosaicer = image.ToMosaicer();
+                mosaicer.Mosaic(
+                    (Rect)mosaicArea,
+                    mosaicType);
+                new ImageFile(mosaicer).Save(outputFile);
+            }
+            catch (ImageFormatNotSupportedException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine("The supported formats are below.");
+                Console.Error.WriteLine(String.Join(Environment.NewLine, ex.SupportedFormats
+                        .Select(f => $"{f.Description}:     {string.Join(", ", f.Extensions)}")));
+            }
         }
 
         private static void Help()

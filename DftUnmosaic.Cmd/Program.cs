@@ -32,10 +32,20 @@ namespace DftUnmosaic.Cmd
                 Path.Combine(
                     Path.GetDirectoryName(file),
                     $"{Path.GetFileNameWithoutExtension(file)}_inv{extension}");
-                var image = new ImageFile(file);
-                var unmosaicer = image.ToUnmosaicer();
-                unmosaicer.Unmosaic();
-                new ImageFile(unmosaicer).Save(outputFile);
+                try
+                {
+                    var image = new ImageFile(file);
+                    var unmosaicer = image.ToUnmosaicer();
+                    unmosaicer.Unmosaic();
+                    new ImageFile(unmosaicer).Save(outputFile);
+                }
+                catch (ImageFormatNotSupportedException ex)
+                {
+                    Console.Error.WriteLine(ex.Message);
+                    Console.Error.WriteLine("The supported formats are below.");
+                    Console.Error.WriteLine(String.Join(Environment.NewLine, ex.SupportedFormats
+                            .Select(f => $"{f.Description}:     {string.Join(", ", f.Extensions)}")));
+                }
             }
         }
 
