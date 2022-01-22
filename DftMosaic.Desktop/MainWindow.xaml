@@ -10,7 +10,7 @@
                  xmlns:b="clr-namespace:DftMosaic.Desktop.Xaml.Behaviors"
                  xmlns:c="clr-namespace:DftMosaic.Desktop.Xaml.Controllers"
                  xmlns:core="clr-namespace:DftMosaic.Core.Mosaic;assembly=DftMosaic.Core" xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-                 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                 xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  mc:Ignorable="d"
                  GlowBrush="{DynamicResource AccentColorBrush}"
                  BorderThickness="1"
@@ -49,7 +49,17 @@
             </StatusBar>
             <GroupBox DockPanel.Dock="Right">
                 <GroupBox.Header>
-                    <TextBlock Text="変換モード" FontSize="25"/>
+                    <DockPanel Background="Transparent">
+                        <TextBlock DockPanel.Dock="Left" Text="変換モード" FontSize="25"/>
+                        <iconPacks:PackIconFeatherIcons Kind="HelpCircle"
+                                                        VerticalAlignment="Center">
+                        </iconPacks:PackIconFeatherIcons>
+                        <DockPanel.ToolTip>
+                            <ToolTip>
+                                <TextBlock FontSize="18" Text="白黒：画像をグレースケールに変換してモザイクをかけます。モザイクを外した際に画質の劣化がありません。&#x0d;&#x0a;カラー：画像をカラーのままモザイクをかけます。出力ファイルサイズが大きくなります。モザイクを外した際に若干の画質劣化があります。&#x0d;&#x0a;カラー（小サイズ）：画像をカラーのままモザイクをかけます。出力ファイルサイズは小さいですが、モザイクを外した際に画質劣化があります。"/>
+                            </ToolTip>
+                        </DockPanel.ToolTip>
+                    </DockPanel>
                 </GroupBox.Header>
                 <StackPanel>
                     <StackPanel>
