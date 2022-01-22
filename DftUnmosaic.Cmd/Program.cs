@@ -36,7 +36,6 @@ namespace DftUnmosaic.Cmd
                 var unmosaicer = image.ToUnmosaicer();
                 unmosaicer.Unmosaic();
                 new ImageFile(unmosaicer).Save(outputFile);
-                Cv2.ImWrite(outputFile, unmosaicer.OriginalImage);
             }
         }
 
