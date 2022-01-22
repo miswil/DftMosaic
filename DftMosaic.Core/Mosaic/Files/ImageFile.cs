@@ -5,37 +5,37 @@ namespace DftMosaic.Core.Mosaic.Files
 {
     public class ImageFile
     {
-        public static readonly IReadOnlyList<(string Description, string Extensions)> ReadableFileFormats
-            = new List<(string Description, string Extensions)>
+        public static readonly IReadOnlyList<ImageFileFormat> ReadableFileFormats
+            = new List<ImageFileFormat>
             {
-                ("Windows bitmaps", "*.bmp; *.dib"),
-                ("JPEG files", "*.jpeg, *.jpg; *.jpe"),
-                ("JPEG 2000 files", "*.jp2"),
-                ("Portable Network Graphics", "*.png"),
-                ("TIFF files", "*.tiff; *.tif")
+                new("Windows bitmaps", new[]{".bmp",".dib" }),
+                new("JPEG files", new[]{".jpeg",".jpg",".jpe" }),
+                new("JPEG 2000 files", new[]{".jp2" }),
+                new("Portable Network Graphics", new[]{".png" }),
+                new("TIFF files", new[]{".tiff",".tif" })
             }.AsReadOnly();
 
         public static bool IsReadableFileFormats(string extension)
             => ExtensionMatch(ReadableFileFormats, extension);
 
-        public static readonly IReadOnlyList<(string Description, string Extensions)> MosaicWritableFileFormats
-            = new List<(string Description, string Extensions)>
+        public static readonly IReadOnlyList<ImageFileFormat> MosaicWritableFileFormats
+            = new List<ImageFileFormat>
             {
-                ("Portable Network Graphics", "*.png"),
-                ("TIFF files", "*.tiff; *.tif")
+                new("Portable Network Graphics", new[]{".png" }),
+                new("TIFF files", new[]{".tiff","*.tif" }),
             }.AsReadOnly();
 
         public static bool IsMosaicWritableFileFormats(string extension)
             => ExtensionMatch(MosaicWritableFileFormats, extension);
 
-        public static readonly IReadOnlyList<(string Description, string Extensions)> UnmosaicWritableFileFormats
-            = new List<(string Description, string Extensions)>
+        public static readonly IReadOnlyList<ImageFileFormat> UnmosaicWritableFileFormats
+            = new List<ImageFileFormat>
             {
-                ("Windows bitmaps", "*.bmp; *.dib"),
-                ("JPEG files", "*.jpeg, *.jpg; *.jpe"),
-                ("JPEG 2000 files", "*.jp2"),
-                ("Portable Network Graphics", "*.png"),
-                ("TIFF files", "*.tiff; *.tif")
+                new("Windows bitmaps", new[]{".bmp",".dib" }),
+                new("JPEG files", new[]{".jpeg",".jpg",".jpe" }),
+                new("JPEG 2000 files", new[]{".jp2" }),
+                new("Portable Network Graphics", new[]{".png" }),
+                new("TIFF files", new[]{".tiff",".tif" })
             }.AsReadOnly();
 
         public static bool IsUnmosaicWritableFileFormats(string extension)
@@ -122,13 +122,12 @@ namespace DftMosaic.Core.Mosaic.Files
             return new Unmosaicer(this.Image, mosaicInfo.Area, mosaicInfo.Type, mosaicInfo.Scale);
         }
 
-        private static bool ExtensionMatch(IReadOnlyList<(string Description, string Extensions)> formats, string extension)
+        private static bool ExtensionMatch(IReadOnlyList<ImageFileFormat> formats, string extension)
         {
             extension = extension.ToLower();
             return formats
-                .Select(f => f.Extensions.Split(';'))
+                .Select(f => f.Extensions)
                 .SelectMany(ext => ext)
-                .Select(ext => ext.Trim().Trim('*'))
                 .FirstOrDefault(ext => ext.ToLower() == extension) != null;
         }
     }

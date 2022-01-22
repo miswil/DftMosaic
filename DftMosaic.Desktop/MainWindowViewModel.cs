@@ -122,7 +122,7 @@ namespace DftMosaic.Desktop
             var message = new GetOpenFileMessage
             {
                 Filter = ImageFile.ReadableFileFormats
-                    .Select(format => $"{format.Description}|{format.Extensions}")
+                    .Select(format => $"{format.Description}|{string.Join("; ", format.Extensions.Select(ex => $"*{ex}"))}")
                     .Aggregate((fst, scd) => $"{fst}|{scd}"),
             };
             WeakReferenceMessenger.Default.Send(message);
@@ -137,7 +137,7 @@ namespace DftMosaic.Desktop
             var message = new GetSaveFileMessage
             {
                 Filter = ImageFile.MosaicWritableFileFormats
-                    .Select(format => $"{format.Description}|{format.Extensions}")
+                    .Select(format => $"{format.Description}|{string.Join("; ", format.Extensions.Select(ex => $"*{ex}"))}")
                     .Aggregate((fst, scd) => $"{fst}|{scd}"),
             };
             WeakReferenceMessenger.Default.Send(message);
