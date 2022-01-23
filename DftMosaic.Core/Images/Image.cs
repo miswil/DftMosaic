@@ -258,11 +258,7 @@ namespace DftMosaic.Core.Images
             mat.MinMaxIdx(out double min, out double max);
             var alpha = 1.0 / (max - min);
             var beta = -min * alpha;
-            return new MosaicScale
-            {
-                Alpha = alpha,
-                Beta = beta,
-            };
+            return new MosaicScale(alpha, beta);
         }
 
         private MosaicScale ScaleImage(Mat mat)
@@ -270,7 +266,7 @@ namespace DftMosaic.Core.Images
             mat.MinMaxIdx(out var matMin, out var matMax);
             var alpha = 1.0 / (matMax - matMin);
             var beta = -matMin * alpha;
-            return new MosaicScale { Alpha = alpha, Beta = beta };
+            return new MosaicScale(alpha, beta);
         }
     }
 }

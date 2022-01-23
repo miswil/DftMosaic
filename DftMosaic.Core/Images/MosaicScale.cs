@@ -1,8 +1,6 @@
 ﻿namespace DftMosaic.Core.Images
 {
-    public class MosaicScale
+    public record MosaicScale(double Alpha, double Beta)
     {
-        public double Alpha { get; set; }
-        public double Beta { get; set; }
     }
 }
