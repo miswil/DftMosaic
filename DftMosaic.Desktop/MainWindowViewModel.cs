@@ -138,14 +138,18 @@ namespace DftMosaic.Desktop
             this.ImageFilePath = filePath;
             this.MosaicedImage = null;
             this.MosaicedImageSource = null;
-            this.unmosaicedImage = null;
+            this.UnmosaicedImage = null;
             this.UnmosaicedImageSource = null;
             this.MosaicCommand.NotifyCanExecuteChanged();
             this.SaveCommand.NotifyCanExecuteChanged();
         }
 
-        private void ImageSelectingCommandExecute(DragEventArgs e)
+        private void ImageSelectingCommandExecute(DragEventArgs? e)
         {
+            if (e is null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
             if (this.IsDropable(e))
             {
                 e.Effects = DragDropEffects.Copy;
@@ -157,8 +161,12 @@ namespace DftMosaic.Desktop
             e.Handled = true;
         }
 
-        private void ImageSelectedCommandExecute(DragEventArgs e)
+        private void ImageSelectedCommandExecute(DragEventArgs? e)
         {
+            if (e is null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
             if (this.IsDropable(e))
             {
                 var imageFilePath = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
@@ -198,6 +206,11 @@ namespace DftMosaic.Desktop
 
         private void SaveCommandExecute()
         {
+            if (this.MosaicedImage is null)
+            {
+                throw new InvalidOperationException();
+            }
+
             var message = new GetSaveFileMessage
             {
                 Filter = ImageFileFormat.MosaicWritableFileFormats
@@ -210,7 +223,7 @@ namespace DftMosaic.Desktop
                 try
                 {
                     var imageFileService = new ImageFileService();
-                    imageFileService.Save(this.mosaicedImage, message.FileName);
+                    imageFileService.Save(this.MosaicedImage, message.FileName);
                 }
                 catch (ImageFormatNotSupportedException ex)
                 {
@@ -232,7 +245,7 @@ namespace DftMosaic.Desktop
 
         private void MosaicCommandExecute()
         {
-            if (this.originalImage is null)
+            if (this.OriginalImage is null)
             {
                 return;
             }
@@ -247,7 +260,7 @@ namespace DftMosaic.Desktop
             this.MosaicedImageSource = this.MosaicedImage.Data.ToBitmapSource();
 
             this.UnmosaicedImage = this.MosaicedImage.Unmosaic();
-            this.UnmosaicedImageSource = this.unmosaicedImage.Data.ToBitmapSource();
+            this.UnmosaicedImageSource = this.UnmosaicedImage.Data.ToBitmapSource();
         }
 
         private bool MosaicCommandCanExecute()

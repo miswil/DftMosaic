@@ -125,6 +125,10 @@ namespace DftMosaic.Core.Images
                     }
                 case MosaicType.FullColor:
                     {
+                        if (this.MosaicInfo.Scale is null)
+                        {
+                            throw new InvalidOperationException("The mosaiced image has no scale information.");
+                        }
                         using var saveMosaiced = this.Data[this.MosaicInfo.Area];
                         using var scaledMosaiced = (saveMosaiced - Scalar.All(this.MosaicInfo.Scale.Beta)) / this.MosaicInfo.Scale.Alpha;
                         using var unmosaiced = this.UnmosaicImageData(scaledMosaiced);
@@ -136,6 +140,10 @@ namespace DftMosaic.Core.Images
                     }
                 case MosaicType.Color:
                     {
+                        if (this.MosaicInfo.Scale is null)
+                        {
+                            throw new InvalidOperationException("The mosaiced image has no scale information.");
+                        }
                         using var saveMosaiced = this.Data[this.MosaicInfo.Area];
                         using var saveMosaiced32F = new Mat();
                         saveMosaiced.ConvertTo(saveMosaiced32F, MatType.CV_32F, 1.0 / 65535);
@@ -150,6 +158,10 @@ namespace DftMosaic.Core.Images
                     }
                 case MosaicType.ShortColor:
                     {
+                        if (this.MosaicInfo.Scale is null)
+                        {
+                            throw new InvalidOperationException("The mosaiced image has no scale information.");
+                        }
                         using var saveMosaiced = this.Data[this.MosaicInfo.Area];
                         using var saveMosaiced32F = new Mat();
                         saveMosaiced.ConvertTo(saveMosaiced32F, MatType.CV_32F, 1.0 / 255);

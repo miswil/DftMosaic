@@ -1,6 +1,4 @@
 ﻿using DftMosaic.Core.Files;
-using DftMosaic.Core.Images;
-using OpenCvSharp;
 
 namespace DftUnmosaic.Cmd
 {
@@ -29,9 +27,15 @@ namespace DftUnmosaic.Cmd
             foreach (var file in targetFiles)
             {
                 var extension = outputExtension ?? Path.GetExtension(file);
+                var dir = Path.GetDirectoryName(file);
+                if (dir is null)
+                {
+                    Console.WriteLine($"Invalid file path: {file}");
+                    continue;
+                }
                 var outputFile =
                 Path.Combine(
-                    Path.GetDirectoryName(file),
+                    dir,
                     $"{Path.GetFileNameWithoutExtension(file)}_inv{extension}");
                 try
                 {

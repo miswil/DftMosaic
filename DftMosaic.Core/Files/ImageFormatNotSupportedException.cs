@@ -17,8 +17,9 @@ namespace DftMosaic.Core.Files
             this.SupportedFormats = supportedFormats;
         }
 
-        protected ImageFormatNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        protected ImageFormatNotSupportedException(SerializationInfo info, StreamingContext context, IReadOnlyCollection<ImageFileFormat> supportedFormats) : base(info, context)
         {
+            this.SupportedFormats = supportedFormats;
         }
 
         public IReadOnlyCollection<ImageFileFormat> SupportedFormats { get; }

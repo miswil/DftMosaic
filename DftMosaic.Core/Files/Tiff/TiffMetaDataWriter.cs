@@ -1,5 +1,4 @@
 ﻿using ExifLibrary;
-using System.Text;
 
 namespace DftMosaic.Core.Files.Tiff
 {

@@ -12,7 +12,7 @@ namespace DftMosaic.Core.Files.Png
 
         public IEnumerable<PngChunk> Chunks => this.chunks.Values.SelectMany(c => c);
 
-        public IEnumerable<PngITxtChunk> ITxts
+        public IEnumerable<PngITxtChunk>? ITxts
         {
             get
             {

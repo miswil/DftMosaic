@@ -1,5 +1,4 @@
-﻿using DftMosaic.Core.Files;
-using System.Text;
+﻿using System.Text;
 
 namespace DftMosaic.Core.Files.Png
 {

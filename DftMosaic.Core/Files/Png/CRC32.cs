@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DftMosaic.Core.Files.Png
+﻿namespace DftMosaic.Core.Files.Png
 {
     internal class CRC32
     {
