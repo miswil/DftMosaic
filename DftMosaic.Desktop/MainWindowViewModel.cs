@@ -14,7 +14,7 @@ using System.Windows.Media;
 
 namespace DftMosaic.Desktop
 {
-    internal class MainWindowViewModel : ObservableObject
+    internal class MainWindowViewModel : ObservableObject, IDisposable
     {
         public IRelayCommand MosaicCommand { get; }
 
@@ -32,7 +32,8 @@ namespace DftMosaic.Desktop
             get => originalImage;
             set
             {
-                originalImage = value;
+                this.originalImage?.Dispose();
+                this.originalImage = value;
                 this.MosaicCommand.NotifyCanExecuteChanged();
             }
         }
@@ -43,6 +44,7 @@ namespace DftMosaic.Desktop
             get => this.mosaicedImage;
             set
             {
+                this.mosaicedImage?.Dispose();
                 this.mosaicedImage = value;
                 this.SaveCommand.NotifyCanExecuteChanged();
             }
@@ -54,6 +56,7 @@ namespace DftMosaic.Desktop
             get => this.unmosaicedImage;
             set
             {
+                this.unmosaicedImage?.Dispose();
                 this.unmosaicedImage= value;
                 this.SaveCommand.NotifyCanExecuteChanged();
             }
@@ -267,6 +270,13 @@ namespace DftMosaic.Desktop
         {
             return this.OriginalImage is not null
                 && this.MosaicArea is not null;
+        }
+
+        public void Dispose()
+        {
+            this.OriginalImage?.Dispose();
+            this.mosaicedImage?.Dispose();
+            this?.UnmosaicedImage?.Dispose();
         }
     }
 }

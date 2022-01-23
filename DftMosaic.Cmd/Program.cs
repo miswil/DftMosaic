@@ -37,8 +37,8 @@ namespace DftMosaic.Cmd
             try
             {
                 var imageFileService = new ImageFileService();
-                var image = new ImageFileService().Load(mosaicedFile);
-                var mosaiced = image.Mosaic(
+                using var image = new ImageFileService().Load(mosaicedFile);
+                using var mosaiced = image.Mosaic(
                     (Rect)mosaicArea,
                     mosaicType);
                 imageFileService.Save(mosaiced, outputFile);

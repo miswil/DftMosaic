@@ -40,8 +40,8 @@ namespace DftUnmosaic.Cmd
                 try
                 {
                     var imageFileService = new ImageFileService();
-                    var image = new ImageFileService().Load(file);
-                    var unmosaiced = image.Unmosaic();
+                    using var image = new ImageFileService().Load(file);
+                    using var unmosaiced = image.Unmosaic();
                     imageFileService.Save(unmosaiced, outputFile);
                 }
                 catch (ImageFormatNotSupportedException ex)

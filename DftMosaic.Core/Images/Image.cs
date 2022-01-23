@@ -2,7 +2,7 @@
 
 namespace DftMosaic.Core.Images
 {
-    public class Image
+    public sealed class Image : IDisposable
     {
         public Mat Data { get; }
         public MosaicInfo? MosaicInfo { get; }
@@ -79,7 +79,7 @@ namespace DftMosaic.Core.Images
 
         private Image MosaicFullColor(Rect mosaicRequestArea, bool optimizeSize)
         {
-            var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
+            using var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
             var mosaiced32F = new Mat();
             fullColor.Data.ConvertTo(mosaiced32F, MatType.CV_32F);
             return new(mosaiced32F, fullColor.MosaicInfo with { Type = MosaicType.FullColor });
@@ -87,7 +87,7 @@ namespace DftMosaic.Core.Images
 
         private Image MosaicColor(Rect mosaicRequestArea, bool optimizeSize)
         {
-            var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
+            using var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
             var mosaiced16U = new Mat();
             fullColor.Data.ConvertTo(mosaiced16U, MatType.CV_16U, 65535);
             return new(mosaiced16U, fullColor.MosaicInfo with { Type = MosaicType.Color });
@@ -95,7 +95,7 @@ namespace DftMosaic.Core.Images
 
         private Image MosaicShortColor(Rect mosaicRequestArea, bool optimizeSize)
         {
-            var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
+            using var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
             var mosaiced8U = new Mat();
             fullColor.Data.ConvertTo(mosaiced8U, MatType.CV_8U, 255);
             return new(mosaiced8U, fullColor.MosaicInfo with { Type = MosaicType.ShortColor });
@@ -154,21 +154,21 @@ namespace DftMosaic.Core.Images
 
         private Image UnmosaicFullColor()
         {
-            var image64F = new Mat();
+            using var image64F = new Mat();
             this.Data.ConvertTo(image64F, MatType.CV_64F);
             return new Image(image64F, this.MosaicInfo).UnmosaicFull64Color();
         }
 
         private Image UnmosaicColor()
         {
-            var image64F = new Mat();
+            using var image64F = new Mat();
             this.Data.ConvertTo(image64F, MatType.CV_64F, 1.0 / 65535);
             return new Image(image64F, this.MosaicInfo).UnmosaicFull64Color();
         }
 
         private Image UnmosaicShortColor()
         {
-            var image64F = new Mat();
+            using var image64F = new Mat();
             this.Data.ConvertTo(image64F, MatType.CV_64F, 1.0 / 255);
             return new Image(image64F, this.MosaicInfo).UnmosaicFull64Color();
         }
@@ -248,6 +248,11 @@ namespace DftMosaic.Core.Images
             var alpha = 1.0 / (matMax - matMin);
             var beta = -matMin * alpha;
             return new MosaicScale(alpha, beta);
+        }
+
+        public void Dispose()
+        {
+            this.Data.Dispose();
         }
     }
 }
