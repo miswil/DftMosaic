@@ -1,4 +1,4 @@
 ﻿namespace DftMosaic.Core.Images
 {
-    public enum MosaicType { GrayScale, FullColor, Color, ShortColor }
+    public enum MosaicType { GrayScale, Full64Color, FullColor, Color, ShortColor }
 }
