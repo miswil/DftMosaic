@@ -21,42 +21,57 @@ namespace DftMosaic.Core.Images
 
         public Image Mosaic(Rect mosaicRequestArea, MosaicType mosaicType, bool optimizeSize = true)
         {
+            return this.Mosaic(new Rect[] { mosaicRequestArea }, mosaicType, optimizeSize);
+        }
+
+        public Image Mosaic(IEnumerable<Rect> mosaicRequestAreas, MosaicType mosaicType, bool optimizeSize = true)
+        {
             if (this.MosaicInfo is not null && this.MosaicInfo.Type != mosaicType)
             {
                 throw new InvalidOperationException("The specified mosaic type must be same as image mosaic type.");
             }
             return mosaicType switch
             {
-                MosaicType.GrayScale => this.MosaicGrayScale(mosaicRequestArea, optimizeSize),
-                MosaicType.FullColor => this.MosaicFullColor(mosaicRequestArea, optimizeSize),
-                MosaicType.Color => this.MosaicColor(mosaicRequestArea, optimizeSize),
-                MosaicType.ShortColor => this.MosaicShortColor(mosaicRequestArea, optimizeSize),
+                MosaicType.GrayScale => this.MosaicGrayScale(mosaicRequestAreas, optimizeSize),
+                MosaicType.FullColor => this.MosaicFullColor(mosaicRequestAreas, optimizeSize),
+                MosaicType.Color => this.MosaicColor(mosaicRequestAreas, optimizeSize),
+                MosaicType.ShortColor => this.MosaicShortColor(mosaicRequestAreas, optimizeSize),
                 _ => throw new ArgumentException("invalid mosaic type."),
             };
         }
 
-        private Image MosaicGrayScale(Rect mosaicRequestArea, bool optimizeSize)
+        private Image MosaicGrayScale(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
         {
             using var grayedOriginal = this.Data.CvtColor(ColorConversionCodes.BGRA2GRAY);
             using var grayedOriginal32F = new Mat();
             grayedOriginal.ConvertTo(grayedOriginal32F, MatType.CV_32F);
-            var mosaicedImage = grayedOriginal.CvtColor(ColorConversionCodes.GRAY2BGRA);
+            var mosaicedImage = this.IsMosaiced ?
+                this.Data :
+                grayedOriginal.CvtColor(ColorConversionCodes.GRAY2BGRA);
+            var mosaicedAreas = new List<MosaicArea>();
 
-            var mosaicArea = mosaicRequestArea;
-            if (optimizeSize)
+            foreach (var mosaicRequestArea in mosaicRequestAreas)
             {
-                mosaicArea = this.DftArea(this.Data, mosaicRequestArea, optimizeSize);
+                var mosaicArea = mosaicRequestArea;
+                if (optimizeSize)
+                {
+                    mosaicArea = this.DftArea(this.Data, mosaicRequestArea, optimizeSize);
+                }
+
+                using var mosaiced = this.MosaicImageData(grayedOriginal32F[mosaicArea]);
+                using var saveMosaiced = new Mat(mosaiced.Rows, mosaiced.Cols, mosaicedImage.Type(), mosaiced.Data);
+                mosaicedImage[mosaicArea] = saveMosaiced;
+                mosaicedAreas.Add(new(mosaicArea, null));
             }
 
-            using var mosaiced = this.MosaicImageData(grayedOriginal32F[mosaicArea]);
-            using var saveMosaiced = new Mat(mosaiced.Rows, mosaiced.Cols, mosaicedImage.Type(), mosaiced.Data);
-            mosaicedImage[mosaicArea] = saveMosaiced;
-
-            return new(mosaicedImage, new(mosaicArea, MosaicType.GrayScale, null));
+            return new(mosaicedImage, new(MosaicType.GrayScale, mosaicedAreas));
         }
 
-        private Image MosaicFull64Color(Rect mosaicRequestArea, bool optimizeSize)
+        private Image MosaicFull64Color(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
         {
+            var mosaicedAreas = new List<MosaicArea>(
+                this.MosaicInfo?.Areas ?? 
+                Enumerable.Empty<MosaicArea>());
             var original64F = new Mat();
             var alpha = this.Data.Depth() switch
             {
@@ -65,37 +80,42 @@ namespace DftMosaic.Core.Images
                 _ => 1.0,
             };
             this.Data.ConvertTo(original64F, MatType.CV_64F, alpha);
-            var mosaicArea = mosaicRequestArea;
-            if (optimizeSize)
-            {
-                mosaicArea = this.DftArea(this.Data, mosaicRequestArea, optimizeSize);
-            }
 
-            using var mosaiced = this.MosaicImageData(original64F[mosaicArea]);
-            var scale = this.ScaleImage(mosaiced);
-            original64F[mosaicArea] = mosaiced * scale.Alpha + Scalar.All(scale.Beta);
-            return new(original64F, new(mosaicArea, MosaicType.Full64Color, scale));
+            foreach (var mosaicRequestArea in mosaicRequestAreas)
+            {
+                var mosaicArea = mosaicRequestArea;
+                if (optimizeSize)
+                {
+                    mosaicArea = this.DftArea(this.Data, mosaicRequestArea, optimizeSize);
+                }
+
+                using var mosaiced = this.MosaicImageData(original64F[mosaicArea]);
+                var scale = this.ScaleImage(mosaiced);
+                original64F[mosaicArea] = mosaiced * scale.Alpha + Scalar.All(scale.Beta);
+                mosaicedAreas.Add(new(mosaicArea, scale));
+            }
+            return new(original64F, new(MosaicType.Full64Color, mosaicedAreas));
         }
 
-        private Image MosaicFullColor(Rect mosaicRequestArea, bool optimizeSize)
+        private Image MosaicFullColor(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
         {
-            using var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
+            using var fullColor = this.MosaicFull64Color(mosaicRequestAreas, optimizeSize);
             var mosaiced32F = new Mat();
             fullColor.Data.ConvertTo(mosaiced32F, MatType.CV_32F);
             return new(mosaiced32F, fullColor.MosaicInfo with { Type = MosaicType.FullColor });
         }
 
-        private Image MosaicColor(Rect mosaicRequestArea, bool optimizeSize)
+        private Image MosaicColor(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
         {
-            using var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
+            using var fullColor = this.MosaicFull64Color(mosaicRequestAreas, optimizeSize);
             var mosaiced16U = new Mat();
             fullColor.Data.ConvertTo(mosaiced16U, MatType.CV_16U, 65535);
             return new(mosaiced16U, fullColor.MosaicInfo with { Type = MosaicType.Color });
         }
 
-        private Image MosaicShortColor(Rect mosaicRequestArea, bool optimizeSize)
+        private Image MosaicShortColor(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
         {
-            using var fullColor = this.MosaicFull64Color(mosaicRequestArea, optimizeSize);
+            using var fullColor = this.MosaicFull64Color(mosaicRequestAreas, optimizeSize);
             var mosaiced8U = new Mat();
             fullColor.Data.ConvertTo(mosaiced8U, MatType.CV_8U, 255);
             return new(mosaiced8U, fullColor.MosaicInfo with { Type = MosaicType.ShortColor });
@@ -121,32 +141,38 @@ namespace DftMosaic.Core.Images
         private Image UnmosaicGrayScale()
         {
             var unmosaicedImage = this.Data.CvtColor(ColorConversionCodes.RGBA2GRAY);
-            using var mosaiced = this.Data[this.MosaicInfo.Area].Clone();
-            using var mosaiced32F =
-                new Mat(
-                    mosaiced.Rows,
-                    mosaiced.Cols,
-                    MatType.CV_32F,
-                    mosaiced.Data);
-            using var unmosaiced = this.UnmosaicImageData(mosaiced32F);
-            using var unmosaicedCvt = new Mat();
-            unmosaiced.ConvertTo(unmosaicedCvt, this.Data.Type());
-            unmosaicedImage[this.MosaicInfo.Area] = unmosaicedCvt;
+            foreach (var area in this.MosaicInfo.Areas.Reverse())
+            {
+                using var mosaiced = this.Data[area.Area].Clone();
+                using var mosaiced32F =
+                    new Mat(
+                        mosaiced.Rows,
+                        mosaiced.Cols,
+                        MatType.CV_32F,
+                        mosaiced.Data);
+                using var unmosaiced = this.UnmosaicImageData(mosaiced32F);
+                using var unmosaicedCvt = new Mat();
+                unmosaiced.ConvertTo(unmosaicedCvt, this.Data.Type());
+                unmosaicedImage[area.Area] = unmosaicedCvt;
+            }
             return new(unmosaicedImage);
         }
 
         private Image UnmosaicFull64Color()
         {
             using var unmosaicedImage = this.Data.Clone();
-            if (this.MosaicInfo.Scale is null)
+            foreach (var area in this.MosaicInfo.Areas.Reverse())
             {
-                throw new InvalidOperationException("The mosaiced image has no scale information.");
-            }
+                if (area.Scale is null)
+                {
+                    throw new InvalidOperationException("The mosaiced image has no scale information.");
+                }
 
-            using var mosaicedArea = unmosaicedImage[this.MosaicInfo.Area];
-            using var scaledMosaiced = (mosaicedArea - Scalar.All(this.MosaicInfo.Scale.Beta)) / this.MosaicInfo.Scale.Alpha;
-            using var unmosaicedArea = this.UnmosaicImageData(scaledMosaiced);
-            unmosaicedImage[this.MosaicInfo.Area] = unmosaicedArea;
+                using var mosaicedArea = unmosaicedImage[area.Area];
+                using var scaledMosaiced = (mosaicedArea - Scalar.All(area.Scale.Beta)) / area.Scale.Alpha;
+                using var unmosaicedArea = this.UnmosaicImageData(scaledMosaiced);
+                unmosaicedImage[area.Area] = unmosaicedArea;
+            }
             var unmosaicedImage8U = new Mat();
             unmosaicedImage.ConvertTo(unmosaicedImage8U, MatType.CV_8U, 255);
             return new(unmosaicedImage8U);
