@@ -9,7 +9,7 @@ namespace DftMosaic.Cmd
     {
         private enum Mode { Convert, Help, }
 
-        private static Rect? mosaicArea;
+        private static List<Rect> mosaicAreas = new List<Rect>();
         private static string? mosaicedFile;
         private static string? outputFile;
         private static MosaicType mosaicType = MosaicType.GrayScale;
@@ -30,7 +30,7 @@ namespace DftMosaic.Cmd
 
         private static void Convert()
         {
-            if (mosaicedFile is null || mosaicArea is null || outputFile is null)
+            if (mosaicedFile is null || !mosaicAreas.Any() || outputFile is null)
             {
                 throw new InvalidOperationException("An image file and mosaiced area and output file must be specified.");
             }
@@ -39,7 +39,7 @@ namespace DftMosaic.Cmd
                 var imageFileService = new ImageFileService();
                 using var image = new ImageFileService().Load(mosaicedFile);
                 using var mosaiced = image.Mosaic(
-                    (Rect)mosaicArea,
+                    mosaicAreas,
                     mosaicType);
                 imageFileService.Save(mosaiced, outputFile);
             }
@@ -54,7 +54,7 @@ namespace DftMosaic.Cmd
 
         private static void Help()
         {
-            Console.WriteLine("usage: DftMosaic.Cmd.exe -m X,Y,W,H");
+            Console.WriteLine("usage: DftMosaic.Cmd.exe -m X,Y,W,H[;X2,Y2,W2,H2...]");
             Console.WriteLine("       [-h | --help] [-o | --output <output image>");
             Console.WriteLine("       [-t | --type <type>]");
             Console.WriteLine("       <input image>");
@@ -64,6 +64,7 @@ namespace DftMosaic.Cmd
             Console.WriteLine("    Y: An integer value. Left position of the mosaiced area.");
             Console.WriteLine("    W: An integer value. Width of the mosaiced area.");
             Console.WriteLine("    H: An integer value. Height of the mosaiced area.");
+            Console.WriteLine("    Multiple areas can be specified by semi colon separation.");
             Console.WriteLine("    <output image>: Specify an file name of output image. Default \"<input image name>_cnv.<imput image extension>\"");
             Console.WriteLine("    -t or --type option: Specify the mosaic type.");
             Console.WriteLine("    <type>: \"gray\": Treat the input image as a gray scale image.");
@@ -91,18 +92,22 @@ namespace DftMosaic.Cmd
                             return Mode.Help;
                         case "-m" or "--mosaic":
                             var mOption = args[++i];
-                            var match = Regex.Match(mOption, @"(?<x>\d+),(?<y>\d+),(?<w>\d+),(?<h>\d+)");
-                            if (!match.Success)
+                            var regex = new Regex(@"(?<x>\d+),(?<y>\d+),(?<w>\d+),(?<h>\d+);?");
+                            var matches = regex.Matches(mOption);
+                            foreach (Match match in matches)
                             {
-                                Console.WriteLine("Invalid format mosaic area.");
-                                return Mode.Help;
+                                if (!match.Success)
+                                {
+                                    Console.WriteLine("Invalid format mosaic area.");
+                                    return Mode.Help;
+                                }
+                                mosaicAreas.Add(new(
+                                    int.Parse(match.Groups["x"].Value),
+                                    int.Parse(match.Groups["y"].Value),
+                                    int.Parse(match.Groups["w"].Value),
+                                    int.Parse(match.Groups["h"].Value)
+                                    ));
                             }
-                            mosaicArea = new(
-                                int.Parse(match.Groups["x"].Value),
-                                int.Parse(match.Groups["y"].Value),
-                                int.Parse(match.Groups["w"].Value),
-                                int.Parse(match.Groups["h"].Value)
-                                );
                             break;
                         case "-o" or "--output":
                             var oOption = args[++i];
@@ -141,7 +146,7 @@ namespace DftMosaic.Cmd
                 Console.WriteLine("Invalid argument.");
                 return Mode.Help;
             }
-            if (mosaicArea is null || mosaicedFile is null)
+            if (!mosaicAreas.Any() || mosaicedFile is null)
             {
                 Console.WriteLine("Invalid argument.");
                 return Mode.Help;
