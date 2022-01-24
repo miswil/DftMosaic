@@ -60,11 +60,11 @@ namespace DftMosaic.Cmd
             Console.WriteLine("       <input image>");
             Console.WriteLine();
             Console.WriteLine("    X,Y,W,H: Specify the area to be mosaiced. No space is allowed for before and after the comma.");
-            Console.WriteLine("    X: An integer value. Top position of the mosaiced area.");
-            Console.WriteLine("    Y: An integer value. Left position of the mosaiced area.");
-            Console.WriteLine("    W: An integer value. Width of the mosaiced area.");
-            Console.WriteLine("    H: An integer value. Height of the mosaiced area.");
-            Console.WriteLine("    Multiple areas can be specified by semi colon separation.");
+            Console.WriteLine("      X: An integer value. Top position of the mosaiced area.");
+            Console.WriteLine("      Y: An integer value. Left position of the mosaiced area.");
+            Console.WriteLine("      W: An integer value. Width of the mosaiced area.");
+            Console.WriteLine("      H: An integer value. Height of the mosaiced area.");
+            Console.WriteLine("      Multiple areas can be specified by semi colon separation.");
             Console.WriteLine("    <output image>: Specify an file name of output image. Default \"<input image name>_cnv.<imput image extension>\"");
             Console.WriteLine("    -t or --type option: Specify the mosaic type.");
             Console.WriteLine("    <type>: \"gray\": Treat the input image as a gray scale image.");
