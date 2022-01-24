@@ -1,7 +1,6 @@
 ﻿using DftMosaic.Desktop.Xaml.Controllers;
 using Microsoft.Xaml.Behaviors;
 using System.Windows;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 

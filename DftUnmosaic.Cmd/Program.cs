@@ -1,5 +1,4 @@
-﻿using DftMosaic.Core.Mosaic.Files;
-using OpenCvSharp;
+﻿using DftMosaic.Core.Files;
 
 namespace DftUnmosaic.Cmd
 {
@@ -28,16 +27,22 @@ namespace DftUnmosaic.Cmd
             foreach (var file in targetFiles)
             {
                 var extension = outputExtension ?? Path.GetExtension(file);
+                var dir = Path.GetDirectoryName(file);
+                if (dir is null)
+                {
+                    Console.WriteLine($"Invalid file path: {file}");
+                    continue;
+                }
                 var outputFile =
                 Path.Combine(
-                    Path.GetDirectoryName(file),
+                    dir,
                     $"{Path.GetFileNameWithoutExtension(file)}_inv{extension}");
                 try
                 {
-                    var image = new ImageFile(file);
-                    var unmosaicer = image.ToUnmosaicer();
-                    unmosaicer.Unmosaic();
-                    new ImageFile(unmosaicer).Save(outputFile);
+                    var imageFileService = new ImageFileService();
+                    using var image = new ImageFileService().Load(file);
+                    using var unmosaiced = image.Unmosaic();
+                    imageFileService.Save(unmosaiced, outputFile);
                 }
                 catch (ImageFormatNotSupportedException ex)
                 {

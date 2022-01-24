@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace DftMosaic.Core.Mosaic.Files
+namespace DftMosaic.Core.Files
 {
     public class ImageFormatNotSupportedException : NotSupportedException
     {
@@ -17,8 +17,9 @@ namespace DftMosaic.Core.Mosaic.Files
             this.SupportedFormats = supportedFormats;
         }
 
-        protected ImageFormatNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        protected ImageFormatNotSupportedException(SerializationInfo info, StreamingContext context, IReadOnlyCollection<ImageFileFormat> supportedFormats) : base(info, context)
         {
+            this.SupportedFormats = supportedFormats;
         }
 
         public IReadOnlyCollection<ImageFileFormat> SupportedFormats { get; }

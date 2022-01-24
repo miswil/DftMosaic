@@ -1,9 +1,6 @@
-﻿using DftMosaic.Core.Mosaic;
-using DftMosaic.Core.Mosaic.Files;
+﻿using DftMosaic.Core.Files;
+using DftMosaic.Core.Images;
 using OpenCvSharp;
-using System;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace DftMosaic.Cmd
@@ -14,10 +11,11 @@ namespace DftMosaic.Cmd
 
         private static Rect? mosaicArea;
         private static string? mosaicedFile;
-        private static string outputFile;
+        private static string? outputFile;
         private static MosaicType mosaicType = MosaicType.GrayScale;
         static void Main(string[] args)
         {
+            var dir = Directory.GetCurrentDirectory();
             switch (ParseArg(args))
             {
                 case Mode.Convert:
@@ -32,14 +30,18 @@ namespace DftMosaic.Cmd
 
         private static void Convert()
         {
+            if (mosaicedFile is null || mosaicArea is null || outputFile is null)
+            {
+                throw new InvalidOperationException("An image file and mosaiced area and output file must be specified.");
+            }
             try
             {
-                var image = new ImageFile(mosaicedFile);
-                var mosaicer = image.ToMosaicer();
-                mosaicer.Mosaic(
+                var imageFileService = new ImageFileService();
+                using var image = new ImageFileService().Load(mosaicedFile);
+                using var mosaiced = image.Mosaic(
                     (Rect)mosaicArea,
                     mosaicType);
-                new ImageFile(mosaicer).Save(outputFile);
+                imageFileService.Save(mosaiced, outputFile);
             }
             catch (ImageFormatNotSupportedException ex)
             {
@@ -146,9 +148,15 @@ namespace DftMosaic.Cmd
             }
             if (outputFile is null)
             {
+                var dir = Path.GetDirectoryName(mosaicedFile);
+                if (dir is null)
+                {
+                    Console.WriteLine($"Invalid file path: {mosaicedFile}");
+                    return Mode.Help;
+                }
                 outputFile =
                     Path.Combine(
-                        Path.GetDirectoryName(mosaicedFile),
+                        dir,
                         $"{Path.GetFileNameWithoutExtension(mosaicedFile)}_cnv{Path.GetExtension(mosaicedFile)}");
             }
             return Mode.Convert;

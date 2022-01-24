@@ -1,7 +1,7 @@
-﻿using DftMosaic.Core.Mosaic.Files.Png;
-using DftMosaic.Core.Mosaic.Files.Tiff;
+﻿using DftMosaic.Core.Files.Png;
+using DftMosaic.Core.Files.Tiff;
 
-namespace DftMosaic.Core.Mosaic.Files
+namespace DftMosaic.Core.Files
 {
     internal class MetaDataOperationFactory
     {

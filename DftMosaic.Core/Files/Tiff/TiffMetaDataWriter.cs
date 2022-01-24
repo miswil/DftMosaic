@@ -1,7 +1,6 @@
 ﻿using ExifLibrary;
-using System.Text;
 
-namespace DftMosaic.Core.Mosaic.Files.Tiff
+namespace DftMosaic.Core.Files.Tiff
 {
     internal class TiffMetaDataWriter : IWriteMetaData
     {
@@ -10,7 +9,7 @@ namespace DftMosaic.Core.Mosaic.Files.Tiff
             var tmpFile = Path.GetTempFileName();
             try
             {
-                var fileMetaData = ExifLibrary.ImageFile.FromFile(filePath);
+                var fileMetaData = ImageFile.FromFile(filePath);
                 MapToExifProperty(fileMetaData.Properties, metaData);
                 fileMetaData.Save(tmpFile);
             }

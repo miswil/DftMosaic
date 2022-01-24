@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace DftMosaic.Core.Mosaic.Files.Png
+namespace DftMosaic.Core.Files.Png
 {
     internal class PngMetaDataWriter : IWriteMetaData
     {
@@ -23,7 +23,7 @@ namespace DftMosaic.Core.Mosaic.Files.Png
             File.Move(tmpFile, filePath, true);
         }
 
-        private PngChunkCollection FromMetaData(MetaData metaData) 
+        private PngChunkCollection FromMetaData(MetaData metaData)
         {
             var chunks = new PngChunkCollection();
             if (metaData.Comment is not null)
