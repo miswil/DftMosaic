@@ -8,6 +8,8 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
 {
     internal class ClippingBehavior : Behavior<UIElement>
     {
+        private ClippingAdorner clippingAorner;
+
         public Rect? ClippedArea
         {
             get { return (Rect?)this.GetValue(ClippedAreaProperty); }
@@ -20,19 +22,6 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
                 typeof(ClippingBehavior),
                 new PropertyMetadata(null,
                                      ClippedAreaChanged));
-
-        public static ClippingAdorner GetClippingAdorner(DependencyObject obj)
-        {
-            return (ClippingAdorner)obj.GetValue(ClippingAdornerProperty);
-        }
-
-        public static void SetClippingAdorner(DependencyObject obj, ClippingAdorner value)
-        {
-            obj.SetValue(ClippingAdornerProperty, value);
-        }
-
-        public static readonly DependencyProperty ClippingAdornerProperty =
-            DependencyProperty.RegisterAttached("ClippingAdorner", typeof(ClippingAdorner), typeof(ClippingBehavior), new PropertyMetadata(null));
 
         protected override void OnAttached()
         {
@@ -64,7 +53,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
         private static void ClippedAreaChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var behavior = (ClippingBehavior)d;
-            var clipper = GetClippingAdorner(behavior);
+            var clipper = behavior.clippingAorner;
             var clippedArea = (Rect?)e.NewValue;
             if (clipper is null)
             {
@@ -76,7 +65,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             }
             else
             {
-                GetClippingAdorner(behavior).ClippedArea = (Rect)clippedArea;
+                behavior.clippingAorner.ClippedArea = (Rect)clippedArea;
             }
         }
 
@@ -93,7 +82,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             };
             newClipper.ClipedAreaResized += this.ClippedAreaResized;
             adornerLayer.Add(newClipper);
-            SetClippingAdorner(this.AssociatedObject, newClipper);
+            this.clippingAorner = newClipper;
         }
 
         private void HideClippingAdorner()
@@ -103,7 +92,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             {
                 return;
             }
-            var olcClipper = GetClippingAdorner(this.AssociatedObject);
+            var olcClipper = this.clippingAorner;
             if (olcClipper is not null)
             {
                 olcClipper.ClipedAreaResized -= this.ClippedAreaResized;
