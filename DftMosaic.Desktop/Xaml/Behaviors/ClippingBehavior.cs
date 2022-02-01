@@ -83,6 +83,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             newClipper.ClipedAreaResized += this.ClippedAreaResized;
             adornerLayer.Add(newClipper);
             this.clippingAorner = newClipper;
+            newClipper.StartInitialDrag();
         }
 
         private void HideClippingAdorner()

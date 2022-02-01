@@ -74,7 +74,7 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         {
             var adorner = (ClippingAdorner)d;
             var adorned = adorner.AdornedElement;
-            if (adorned is null || adorned is null)
+            if (adorned is null)
             {
                 return;
             }
@@ -128,8 +128,18 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.corner4.Drop += this.Dropped;
             this.vSide1.Drop += this.Dropped;
             this.plane.Drop += this.Dropped;
+        }
 
-            this.StartInitialDrag();
+        public void StartInitialDrag()
+        {
+            if (this.IsLoaded)
+            {
+                this.StartInitialDragCore();
+            }
+            else
+            {
+                this.Loaded += this.This_Loaded;
+            }
         }
 
         protected override int VisualChildrenCount => visualChildren.Count;
@@ -284,12 +294,13 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             });
         }
 
-        private void StartInitialDrag()
+        private void This_Loaded(object sender, RoutedEventArgs e)
         {
-            this.Loaded += this.This_Loaded;
+            this.StartInitialDragCore();
+            this.Loaded -= this.This_Loaded;
         }
 
-        private void This_Loaded(object sender, RoutedEventArgs e)
+        private void StartInitialDragCore()
         {
             var mouseDown = new MouseButtonEventArgs(Mouse.PrimaryDevice, new TimeSpan(DateTime.Now.Ticks).Milliseconds, MouseButton.Left)
             {
@@ -297,7 +308,6 @@ namespace DftMosaic.Desktop.Xaml.Controllers
                 Source = this.corner3,
             };
             this.corner3.RaiseEvent(mouseDown);
-            this.Loaded -= this.This_Loaded;
         }
 
         private static void Swap(ref Thumb lhs, ref Thumb rhs)
