@@ -1,5 +1,9 @@
 ﻿using DftMosaic.Desktop.Xaml.Controllers;
 using Microsoft.Xaml.Behaviors;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -8,20 +12,46 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
 {
     internal class ClippingBehavior : Behavior<UIElement>
     {
-        private ClippingAdorner clippingAorner;
-
-        public Rect? ClippedArea
+        public IList<Rect> ClippedAreas
         {
-            get { return (Rect?)this.GetValue(ClippedAreaProperty); }
-            set { this.SetValue(ClippedAreaProperty, value); }
+            get { return (IList<Rect>)this.GetValue(ClippedAreasProperty); }
+            set { this.SetValue(ClippedAreasProperty, value); }
         }
 
-        public static readonly DependencyProperty ClippedAreaProperty = DependencyProperty.Register(
-                nameof(ClippedArea),
-                typeof(Rect?),
+        public static readonly DependencyProperty ClippedAreasProperty = DependencyProperty.Register(
+                nameof(ClippedAreas),
+                typeof(IList<Rect>),
                 typeof(ClippingBehavior),
                 new PropertyMetadata(null,
-                                     ClippedAreaChanged));
+                                     ClippedAreasChanged));
+
+        private static void ClippedAreasChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var behavior = (ClippingBehavior)d;
+            var clippedAreas = (ICollection<Rect>)e.NewValue;
+
+            behavior.HideAllClippingAdorner();
+            if (clippedAreas is not null)
+            {
+                foreach (var area in clippedAreas)
+                {
+                    behavior.ShowClippingAdorner(area);
+                }
+            }
+            if (e.OldValue is INotifyCollectionChanged oldNcc)
+            {
+                oldNcc.CollectionChanged -= behavior.ClippedAreasCollectionChanged;
+            }
+            if (e.NewValue is INotifyCollectionChanged newNcc)
+            {
+                newNcc.CollectionChanged += behavior.ClippedAreasCollectionChanged;
+            }
+        }
+
+        public ClippingBehavior()
+        {
+            this.ClippedAreas = new List<Rect>();
+        }
 
         protected override void OnAttached()
         {
@@ -46,64 +76,145 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
 
         private void BeginClip(Point position)
         {
-            this.HideClippingAdorner();
-            this.ShowClippingAdorner(position);
-        }
-
-        private static void ClippedAreaChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var behavior = (ClippingBehavior)d;
-            var clipper = behavior.clippingAorner;
-            var clippedArea = (Rect?)e.NewValue;
-            if (clipper is null)
+            var area = new Rect(position, new Size(0, 0));
+            var adorner = this.ShowClippingAdorner(area);
+            if (adorner != null)
             {
-                return;
-            }
-            if (clippedArea is null)
-            {
-                behavior.HideClippingAdorner();
-            }
-            else
-            {
-                behavior.clippingAorner.ClippedArea = (Rect)clippedArea;
+                this.AddClippedAdornerWithoutSelfNotification(area);
+                adorner.StartInitialDrag();
             }
         }
 
-        private void ShowClippingAdorner(Point position)
+        private void AddClippedAdornerWithoutSelfNotification(Rect area)
         {
+            var ncc = this.ClippedAreas as INotifyCollectionChanged;
+            if (ncc is not null)
+            {
+                ncc.CollectionChanged -= this.ClippedAreasCollectionChanged;
+            }
+            this.ClippedAreas.Add(area);
+            if (ncc is not null)
+            {
+                ncc.CollectionChanged += this.ClippedAreasCollectionChanged;
+            }
+        }
+
+        private void ClippedAreasCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+#pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
+#pragma warning disable CS8605 // null の可能性がある値をボックス化解除しています。
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    this.ShowClippingAdorner((Rect)e.NewItems[0]);
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    this.HideClippingAdorner((Rect)e.OldItems[0]);
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    this.ClippingAdorners()[e.NewStartingIndex].ClippedArea = (Rect)e.NewItems[0];
+                    break;
+                case NotifyCollectionChangedAction.Move:
+                    throw new NotImplementedException();
+                case NotifyCollectionChangedAction.Reset:
+                    this.HideAllClippingAdorner();
+                    break;
+                default:
+                    throw new InvalidOperationException();
+#pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
+#pragma warning restore CS8605 // null の可能性がある値をボックス化解除しています。
+            }
+        }
+
+        private ClippingAdorner? ShowClippingAdorner(Rect area)
+        {
+            if (this.AssociatedObject is null)
+            {
+                return null;
+            }
             var adornerLayer = AdornerLayer.GetAdornerLayer(this.AssociatedObject);
             if (adornerLayer is null)
             {
-                return;
+                return null;
             }
             var newClipper = new ClippingAdorner(this.AssociatedObject)
             {
-                ClippedArea = new Rect(position, new Size(0, 0)),
+                ClippedArea = area,
             };
             newClipper.ClipedAreaResized += this.ClippedAreaResized;
             adornerLayer.Add(newClipper);
-            this.clippingAorner = newClipper;
-            newClipper.StartInitialDrag();
+            return newClipper;
         }
 
-        private void HideClippingAdorner()
+        private void HideClippingAdorner(Rect rect)
         {
+            if (this.AssociatedObject is null)
+            {
+                return;
+            }
             var adornerLayer = AdornerLayer.GetAdornerLayer(this.AssociatedObject);
             if (adornerLayer is null)
             {
                 return;
             }
-            var olcClipper = this.clippingAorner;
-            if (olcClipper is not null)
+            var adorner = this.ClippingAdorners()?.FirstOrDefault(a => a.ClippedArea == rect);
+            if (adorner is not null)
             {
-                olcClipper.ClipedAreaResized -= this.ClippedAreaResized;
-                adornerLayer.Remove(olcClipper);
+                adorner.ClipedAreaResized -= this.ClippedAreaResized;
+                adornerLayer.Remove(adorner);
+            }
+        }
+
+        private void HideAllClippingAdorner()
+        {
+            if (this.AssociatedObject is null)
+            {
+                return;
+            }
+            var adornerLayer = AdornerLayer.GetAdornerLayer(this.AssociatedObject);
+            if (adornerLayer is null)
+            {
+                return;
+            }
+            foreach (var adorner in this.ClippingAdorners() ?? Enumerable.Empty<ClippingAdorner>())
+            {
+                adorner.ClipedAreaResized -= this.ClippedAreaResized;
+                adornerLayer.Remove(adorner);
             }
         }
 
         private void ClippedAreaResized(object? sender, ClipEventArgs e)
         {
-            this.ClippedArea = e.ClipedArea;
+            var index = -1;
+            var adorners = this.ClippingAdorners();
+#pragma warning disable CS8602 // イベントハンドラに入る時点でnullとならない保証済み
+            for (int i = 0; i < adorners.Count; i++)
+#pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
+            {
+                if (adorners[i].Equals(sender))
+                {
+                    index = i;
+                    break;
+                }
+            }
+            if (index >= 0)
+            {
+                this.ClippedAreas[index] = e.ClipedArea;
+            }
+        }
+
+        private IReadOnlyList<ClippingAdorner>? ClippingAdorners()
+        {
+            if (this.AssociatedObject is null)
+            {
+                return null;
+            }
+            var adornerLayer = AdornerLayer.GetAdornerLayer(this.AssociatedObject);
+            if (adornerLayer is null)
+            {
+                return null;
+            }
+            return adornerLayer.GetAdorners(this.AssociatedObject).OfType<ClippingAdorner>().ToList();
         }
     }
 }
