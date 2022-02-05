@@ -169,6 +169,46 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.deleteButton.Visibility = Visibility.Collapsed;
         }
 
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            var handled = true;
+            switch (e.Key)
+            {
+                case Key.Delete:
+                    this.RequestDelete();
+                    break;
+                case Key.Up:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        Y = this.ClippedArea.Y - 1,
+                    };
+                    break;
+                case Key.Down:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        Y = this.ClippedArea.Y + 1,
+                    };
+                    break;
+                case Key.Left:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        X = this.ClippedArea.X - 1,
+                    };
+                    break;
+                case Key.Right:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        X = this.ClippedArea.X + 1,
+                    };
+                    break;
+                default:
+                    handled = false;
+                    break;
+            }
+            e.Handled = handled;
+        }
+
         public void StartInitialDrag()
         {
             if (this.IsLoaded)
@@ -364,7 +404,7 @@ namespace DftMosaic.Desktop.Xaml.Controllers
 
         private void DeleteButtonClicked(object sender, RoutedEventArgs e)
         {
-            this.DeleteRequested?.Invoke(this, EventArgs.Empty);
+            this.RequestDelete();
         }
 
         private void This_Loaded(object sender, RoutedEventArgs e)
@@ -381,6 +421,11 @@ namespace DftMosaic.Desktop.Xaml.Controllers
                 Source = this.corner3,
             };
             this.corner3.RaiseEvent(mouseDown);
+        }
+
+        private void RequestDelete()
+        {
+            this.DeleteRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private static void Swap(ref Thumb lhs, ref Thumb rhs)
