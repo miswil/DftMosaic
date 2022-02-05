@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 
 namespace DftMosaic.Desktop.Xaml.Controllers
@@ -16,6 +17,9 @@ namespace DftMosaic.Desktop.Xaml.Controllers
 
         private static readonly SolidColorBrush TransparentBackgroundBrush;
         private static readonly Geometry DeleteButtonCross;
+
+        private readonly Pen areaBorderPen;
+        private readonly Storyboard selectedAreaBorderPenStoryboard;
 
         static ClippingAdorner()
         {
@@ -128,6 +132,9 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.plane = this.CreateChildThumbForMove();
             this.deleteButton = this.CreateDeleteButton();
 
+            (this.areaBorderPen, this.selectedAreaBorderPenStoryboard)
+                = this.CreateBorderSelectAnimationStoryboard();
+
             this.corner1.DragDelta += this.Resized;
             this.hSide1.DragDelta += this.Resized;
             this.corner2.DragDelta += this.Resized;
@@ -160,13 +167,13 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         protected override void OnGotFocus(RoutedEventArgs e)
         {
             base.OnGotFocus(e);
-            this.deleteButton.Visibility = Visibility.Visible;
+            this.Activate();
         }
 
         protected override void OnLostFocus(RoutedEventArgs e)
         {
             base.OnLostFocus(e);
-            this.deleteButton.Visibility = Visibility.Collapsed;
+            this.Deactivate();
         }
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -219,6 +226,18 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             {
                 this.Loaded += this.This_Loaded;
             }
+        }
+
+        public void Activate()
+        {
+            this.deleteButton.Visibility = Visibility.Visible;
+            this.selectedAreaBorderPenStoryboard.Begin();
+        }
+
+        public void Deactivate()
+        {
+            this.deleteButton.Visibility = Visibility.Collapsed;
+            this.selectedAreaBorderPenStoryboard.Stop();
         }
 
         protected override int VisualChildrenCount => visualChildren.Count;
@@ -281,11 +300,7 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         protected override void OnRender(DrawingContext drawingContext)
         {
             var brush = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255));
-            var pen = new Pen(new SolidColorBrush(Colors.Black), 1)
-            {
-                DashStyle = new DashStyle(new[] { 9.0, 9.0 }, 0.0),
-            };
-            drawingContext.DrawRectangle(brush, pen, this.ClippedArea);
+            drawingContext.DrawRectangle(brush, this.areaBorderPen, this.ClippedArea);
         }
 
         private Thumb CreateChildThumbForResize()
@@ -346,6 +361,28 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.visualChildren.Add(button);
 
             return button;
+        }
+
+        private (Pen Animated, Storyboard Storyboard) CreateBorderSelectAnimationStoryboard()
+        {
+            var pen = new Pen(new SolidColorBrush(Colors.Black), 1)
+            {
+                DashStyle = new DashStyle(new[] { 9.0, 9.0 }, 0.0),
+            };
+            var selectedAreaBorderPenAnimation = new DoubleAnimation
+            {
+                By = 1.0,
+                From = 0.0,
+                To = 18.0,
+                RepeatBehavior = RepeatBehavior.Forever,
+            };
+            Storyboard.SetTargetProperty(selectedAreaBorderPenAnimation, new PropertyPath(DashStyle.OffsetProperty));
+            Storyboard.SetTarget(selectedAreaBorderPenAnimation, pen.DashStyle);
+            selectedAreaBorderPenAnimation.Freeze();
+            var selectedAreaBorderPenStoryboard = new Storyboard();
+            selectedAreaBorderPenStoryboard.Children.Add(selectedAreaBorderPenAnimation);
+            selectedAreaBorderPenStoryboard.Freeze();
+            return (pen, selectedAreaBorderPenStoryboard);
         }
 
         private void Resized(object sender, DragDeltaEventArgs e)
