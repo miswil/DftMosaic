@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace DftMosaic.Desktop.Xaml.Controllers
 {
     internal class ClippingAdorner : Adorner
     {
         public const int ResizeCornerThumbSize = 12;
+        public const int DeleteButtonSize = 12;
 
         // initial arrangement
         // c1 h1 c2
@@ -24,6 +27,8 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         private readonly Thumb vSide1;
         private readonly Thumb vSide2;
         private readonly Thumb plane;
+
+        private readonly Button deleteButton;
 
         private readonly VisualCollection visualChildren;
 
@@ -70,6 +75,8 @@ namespace DftMosaic.Desktop.Xaml.Controllers
 
         public event EventHandler<ClipEventArgs>? Clipped;
 
+        public event EventHandler? DeleteRequested;
+
         private static void ClippedAreaChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var adorner = (ClippingAdorner)d;
@@ -108,6 +115,7 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.corner3 = this.CreateChildThumbForResize();
             this.vSide1 = this.CreateChildThumbForResize();
             this.plane = this.CreateChildThumbForMove();
+            this.deleteButton = this.CreateDeleteButton();
 
             this.corner1.DragDelta += this.Resized;
             this.hSide1.DragDelta += this.Resized;
@@ -128,6 +136,26 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.corner4.Drop += this.Dropped;
             this.vSide1.Drop += this.Dropped;
             this.plane.Drop += this.Dropped;
+
+            this.Focusable = true;
+        }
+
+        protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseDown(e);
+            this.Focus();
+        }
+
+        protected override void OnGotFocus(RoutedEventArgs e)
+        {
+            base.OnGotFocus(e);
+            this.deleteButton.Visibility = Visibility.Visible;
+        }
+
+        protected override void OnLostFocus(RoutedEventArgs e)
+        {
+            base.OnLostFocus(e);
+            this.deleteButton.Visibility = Visibility.Collapsed;
         }
 
         public void StartInitialDrag()
@@ -185,6 +213,8 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.plane.Height = Math.Max(0, this.ClippedArea.Height - ResizeCornerThumbSize);
             this.plane.Arrange(new Rect(this.ClippedArea.X + ResizeCornerThumbSize / 2, this.ClippedArea.Y + ResizeCornerThumbSize / 2, this.plane.Width, this.plane.Height)); ;
 
+            this.deleteButton.Arrange(new Rect(this.ClippedArea.X + this.ClippedArea.Size.Width + ResizeCornerThumbSize / 2, this.ClippedArea.Y - DeleteButtonSize - ResizeCornerThumbSize / 2, DeleteButtonSize, DeleteButtonSize));
+
             topLeft.Cursor = Cursors.SizeNWSE;
             top.Cursor = Cursors.SizeNS;
             topRight.Cursor = Cursors.SizeNESW;
@@ -240,6 +270,36 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             return thumb;
         }
 
+        private Button CreateDeleteButton()
+        {
+            var cross = new Path
+            {
+                StrokeThickness = 2,
+                Stroke = new SolidColorBrush(Colors.Black),
+                Data = Geometry.Parse(String.Format("M0,0L{0},{0}M{0},0L0,{0}", DeleteButtonSize)),
+            };
+            cross.Data.Freeze();
+            var button = new Button
+            {
+                Style = null,
+                Visibility = Visibility.Collapsed,
+                Content = cross,
+                Background = new SolidColorBrush(Colors.Transparent),
+                Cursor = Cursors.Hand,
+                Focusable = false,
+                Margin = default,
+                Padding = default,
+                BorderThickness = default,
+            };
+
+            button.AddHandler(Button.ClickEvent, (RoutedEventHandler)this.DeleteButtonClicked, true);
+            button.Click += this.DeleteButtonClicked;
+
+            this.visualChildren.Add(button);
+
+            return button;
+        }
+
         private void Resized(object sender, DragDeltaEventArgs e)
         {
             var thumb = (Thumb)sender;
@@ -292,6 +352,11 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             {
                 ClipedArea = this.ClippedArea,
             });
+        }
+
+        private void DeleteButtonClicked(object sender, RoutedEventArgs e)
+        {
+            this.DeleteRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void This_Loaded(object sender, RoutedEventArgs e)

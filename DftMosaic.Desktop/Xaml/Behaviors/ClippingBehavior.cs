@@ -81,6 +81,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             if (adorner != null)
             {
                 this.AddClippedAdornerWithoutSelfNotification(area);
+                adorner.Focus();
                 adorner.StartInitialDrag();
             }
         }
@@ -142,6 +143,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
                 ClippedArea = area,
             };
             newClipper.ClipedAreaResized += this.ClippedAreaResized;
+            newClipper.DeleteRequested += this.ClipperDeleteRequested;
             adornerLayer.Add(newClipper);
             return newClipper;
         }
@@ -163,6 +165,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
                 adorner.ClipedAreaResized -= this.ClippedAreaResized;
                 adornerLayer.Remove(adorner);
             }
+            this.ClippedAreas.Remove(rect);
         }
 
         private void HideAllClippingAdorner()
@@ -203,6 +206,12 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             }
         }
 
+        private void ClipperDeleteRequested(object? sender, EventArgs e)
+        {
+            var clipper = (ClippingAdorner)sender;
+            this.HideClippingAdorner(clipper.ClippedArea);
+        }
+
         private IReadOnlyList<ClippingAdorner>? ClippingAdorners()
         {
             if (this.AssociatedObject is null)
@@ -214,7 +223,7 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
             {
                 return null;
             }
-            return adornerLayer.GetAdorners(this.AssociatedObject).OfType<ClippingAdorner>().ToList();
+            return adornerLayer.GetAdorners(this.AssociatedObject)?.OfType<ClippingAdorner>()?.ToList();
         }
     }
 }
