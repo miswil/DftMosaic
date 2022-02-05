@@ -209,12 +209,13 @@ namespace DftMosaic.Desktop.Xaml.Controllers
 
         private Thumb CreateChildThumbForResize()
         {
-            var thumb = new Thumb();
-
-            thumb.Height = ResizeCornerThumbSize;
-            thumb.Width = ResizeCornerThumbSize;
-            thumb.Opacity = 0.0;
-            thumb.Background = new SolidColorBrush(Colors.Transparent);
+            var thumb = new Thumb
+            {
+                Height = ResizeCornerThumbSize,
+                Width = ResizeCornerThumbSize,
+                Opacity = 0.0,
+                Background = new SolidColorBrush(Colors.Transparent)
+            };
             thumb.Background.Freeze();
 
             this.visualChildren.Add(thumb);
@@ -227,12 +228,11 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             var thumb = new Thumb
             {
                 Cursor = Cursors.ScrollAll,
+                Height = ResizeCornerThumbSize,
+                Width = ResizeCornerThumbSize,
+                Opacity = 0.0,
+                Background = new SolidColorBrush(Colors.Transparent)
             };
-
-            thumb.Height = ResizeCornerThumbSize;
-            thumb.Width = ResizeCornerThumbSize;
-            thumb.Opacity = 0.0;
-            thumb.Background = new SolidColorBrush(Colors.Transparent);
             thumb.Background.Freeze();
 
             this.visualChildren.Add(thumb);
