@@ -174,7 +174,7 @@
                                     <ScaleTransform />
                                 </Image.LayoutTransform>
                                 <i:Interaction.Behaviors>
-                                    <b:ClippingBehavior ClippedArea="{Binding MosaicArea, Mode=TwoWay}"/>
+                                    <b:ClippingBehavior ClippedAreas="{Binding MosaicAreas}"/>
                                 </i:Interaction.Behaviors>
                             </Image>
                             <i:Interaction.Behaviors>

@@ -1,8 +1,6 @@
-﻿using OpenCvSharp;
-
-namespace DftMosaic.Core.Images
+﻿namespace DftMosaic.Core.Images
 {
-    public record MosaicInfo(Rect Area, MosaicType Type, MosaicScale? Scale)
+    public record MosaicInfo(MosaicType Type, IEnumerable<MosaicArea> Areas)
     {
     }
 }

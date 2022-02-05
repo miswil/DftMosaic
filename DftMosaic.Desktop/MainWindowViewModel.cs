@@ -7,6 +7,7 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using OpenCvSharp.WpfExtensions;
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -99,16 +100,7 @@ namespace DftMosaic.Desktop
             set => this.SetProperty(ref imageFilePath, value);
         }
 
-        private Rect? mosaicArea;
-        public Rect? MosaicArea
-        {
-            get => this.mosaicArea;
-            set
-            {
-                this.SetProperty(ref this.mosaicArea, value);
-                this.MosaicCommand.NotifyCanExecuteChanged();
-            }
-        }
+        public ObservableCollection<Rect> MosaicAreas { get; set; }
 
         public SnackbarMessageQueue MessageQueue { get; } = new SnackbarMessageQueue();
 
@@ -120,6 +112,8 @@ namespace DftMosaic.Desktop
             this.SelectImageCommand = new RelayCommand(this.SelectImageCommandExecute);
             this.ImageSelectingCommand = new RelayCommand<DragEventArgs>(this.ImageSelectingCommandExecute);
             this.ImageSelectedCommand = new RelayCommand<DragEventArgs>(this.ImageSelectedCommandExecute);
+            this.MosaicAreas = new ObservableCollection<Rect>();
+            this.MosaicAreas.CollectionChanged += (_, _) => this.MosaicCommand.NotifyCanExecuteChanged();
         }
 
         public void ShowImageFile(string filePath)
@@ -252,13 +246,9 @@ namespace DftMosaic.Desktop
             {
                 return;
             }
-            if (this.MosaicArea is not Rect mosaicArea)
-            {
-                return;
-            }
 
             this.MosaicedImage = this.OriginalImage.Mosaic(
-                new ((int)mosaicArea.X, (int)mosaicArea.Y, (int)mosaicArea.Width, (int)mosaicArea.Height),
+                this.MosaicAreas.Select(r => new OpenCvSharp.Rect((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height)),
                 this.MosaicType);
             this.MosaicedImageSource = this.MosaicedImage.Data.ToBitmapSource();
 
@@ -269,7 +259,7 @@ namespace DftMosaic.Desktop
         private bool MosaicCommandCanExecute()
         {
             return this.OriginalImage is not null
-                && this.MosaicArea is not null;
+                && this.MosaicAreas.Any();
         }
 
         public void Dispose()
