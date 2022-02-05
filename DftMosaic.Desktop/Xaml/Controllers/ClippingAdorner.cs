@@ -14,6 +14,17 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         public const int ResizeCornerThumbSize = 12;
         public const int DeleteButtonSize = 12;
 
+        private static readonly SolidColorBrush TransparentBackgroundBrush;
+        private static readonly Geometry DeleteButtonCross;
+
+        static ClippingAdorner()
+        {
+            TransparentBackgroundBrush = new SolidColorBrush(Colors.Transparent);
+            TransparentBackgroundBrush.Freeze();
+            DeleteButtonCross = Geometry.Parse(String.Format("M0,0L{0},{0}M{0},0L0,{0}", DeleteButtonSize));
+            DeleteButtonCross.Freeze();
+        }
+
         // initial arrangement
         // c1 h1 c2
         // v1    v2
@@ -244,9 +255,8 @@ namespace DftMosaic.Desktop.Xaml.Controllers
                 Height = ResizeCornerThumbSize,
                 Width = ResizeCornerThumbSize,
                 Opacity = 0.0,
-                Background = new SolidColorBrush(Colors.Transparent)
+                Background = TransparentBackgroundBrush
             };
-            thumb.Background.Freeze();
 
             this.visualChildren.Add(thumb);
 
@@ -261,9 +271,8 @@ namespace DftMosaic.Desktop.Xaml.Controllers
                 Height = ResizeCornerThumbSize,
                 Width = ResizeCornerThumbSize,
                 Opacity = 0.0,
-                Background = new SolidColorBrush(Colors.Transparent)
+                Background = TransparentBackgroundBrush
             };
-            thumb.Background.Freeze();
 
             this.visualChildren.Add(thumb);
 
@@ -276,9 +285,8 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             {
                 StrokeThickness = 2,
                 Stroke = new SolidColorBrush(Colors.Black),
-                Data = Geometry.Parse(String.Format("M0,0L{0},{0}M{0},0L0,{0}", DeleteButtonSize)),
+                Data = DeleteButtonCross
             };
-            cross.Data.Freeze();
             var button = new Button
             {
                 Style = null,
