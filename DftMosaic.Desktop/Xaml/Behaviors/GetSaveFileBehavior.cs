@@ -10,7 +10,10 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
     {
         public void Receive(GetSaveFileMessage message)
         {
-            SaveFileDialog dialog = new SaveFileDialog();
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                Filter = message.Filter,
+            };
             if (dialog.ShowDialog() is bool tf && tf)
             {
                 message.FileName = dialog.FileName;

@@ -10,7 +10,10 @@ namespace DftMosaic.Desktop.Xaml.Behaviors
     {
         public void Receive(GetOpenFileMessage message)
         {
-            OpenFileDialog dialog = new OpenFileDialog();
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = message.Filter
+            };
             if (dialog.ShowDialog() is bool tf && tf)
             {
                 message.FileName = dialog.FileName;

@@ -1,4 +1,4 @@
-﻿namespace DftMosaic.Core.Mosaic.Files
+﻿namespace DftMosaic.Core.Files
 {
     internal interface IWriteMetaData
     {

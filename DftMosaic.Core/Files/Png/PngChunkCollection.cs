@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace DftMosaic.Core.Mosaic.Files.Png
+namespace DftMosaic.Core.Files.Png
 {
     internal class PngChunkCollection
     {
@@ -12,7 +12,7 @@ namespace DftMosaic.Core.Mosaic.Files.Png
 
         public IEnumerable<PngChunk> Chunks => this.chunks.Values.SelectMany(c => c);
 
-        public IEnumerable<PngITxtChunk> ITxts
+        public IEnumerable<PngITxtChunk>? ITxts
         {
             get
             {
