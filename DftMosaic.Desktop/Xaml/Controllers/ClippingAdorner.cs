@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 
 namespace DftMosaic.Desktop.Xaml.Controllers
@@ -16,6 +17,9 @@ namespace DftMosaic.Desktop.Xaml.Controllers
 
         private static readonly SolidColorBrush TransparentBackgroundBrush;
         private static readonly Geometry DeleteButtonCross;
+
+        private readonly Pen areaBorderPen;
+        private readonly Storyboard selectedAreaBorderPenStoryboard;
 
         static ClippingAdorner()
         {
@@ -128,6 +132,9 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             this.plane = this.CreateChildThumbForMove();
             this.deleteButton = this.CreateDeleteButton();
 
+            (this.areaBorderPen, this.selectedAreaBorderPenStoryboard)
+                = this.CreateBorderSelectAnimationStoryboard();
+
             this.corner1.DragDelta += this.Resized;
             this.hSide1.DragDelta += this.Resized;
             this.corner2.DragDelta += this.Resized;
@@ -160,13 +167,53 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         protected override void OnGotFocus(RoutedEventArgs e)
         {
             base.OnGotFocus(e);
-            this.deleteButton.Visibility = Visibility.Visible;
+            this.Activate();
         }
 
         protected override void OnLostFocus(RoutedEventArgs e)
         {
             base.OnLostFocus(e);
-            this.deleteButton.Visibility = Visibility.Collapsed;
+            this.Deactivate();
+        }
+
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            var handled = true;
+            switch (e.Key)
+            {
+                case Key.Delete:
+                    this.RequestDelete();
+                    break;
+                case Key.Up:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        Y = this.ClippedArea.Y - 1,
+                    };
+                    break;
+                case Key.Down:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        Y = this.ClippedArea.Y + 1,
+                    };
+                    break;
+                case Key.Left:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        X = this.ClippedArea.X - 1,
+                    };
+                    break;
+                case Key.Right:
+                    this.ClippedArea = this.ClippedArea with
+                    {
+                        X = this.ClippedArea.X + 1,
+                    };
+                    break;
+                default:
+                    handled = false;
+                    break;
+            }
+            e.Handled = handled;
         }
 
         public void StartInitialDrag()
@@ -179,6 +226,18 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             {
                 this.Loaded += this.This_Loaded;
             }
+        }
+
+        public void Activate()
+        {
+            this.deleteButton.Visibility = Visibility.Visible;
+            this.selectedAreaBorderPenStoryboard.Begin();
+        }
+
+        public void Deactivate()
+        {
+            this.deleteButton.Visibility = Visibility.Collapsed;
+            this.selectedAreaBorderPenStoryboard.Stop();
         }
 
         protected override int VisualChildrenCount => visualChildren.Count;
@@ -241,11 +300,7 @@ namespace DftMosaic.Desktop.Xaml.Controllers
         protected override void OnRender(DrawingContext drawingContext)
         {
             var brush = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255));
-            var pen = new Pen(new SolidColorBrush(Colors.Black), 1)
-            {
-                DashStyle = new DashStyle(new[] { 9.0, 9.0 }, 0.0),
-            };
-            drawingContext.DrawRectangle(brush, pen, this.ClippedArea);
+            drawingContext.DrawRectangle(brush, this.areaBorderPen, this.ClippedArea);
         }
 
         private Thumb CreateChildThumbForResize()
@@ -308,6 +363,28 @@ namespace DftMosaic.Desktop.Xaml.Controllers
             return button;
         }
 
+        private (Pen Animated, Storyboard Storyboard) CreateBorderSelectAnimationStoryboard()
+        {
+            var pen = new Pen(new SolidColorBrush(Colors.Black), 1)
+            {
+                DashStyle = new DashStyle(new[] { 9.0, 9.0 }, 0.0),
+            };
+            var selectedAreaBorderPenAnimation = new DoubleAnimation
+            {
+                By = 1.0,
+                From = 0.0,
+                To = 18.0,
+                RepeatBehavior = RepeatBehavior.Forever,
+            };
+            Storyboard.SetTargetProperty(selectedAreaBorderPenAnimation, new PropertyPath(DashStyle.OffsetProperty));
+            Storyboard.SetTarget(selectedAreaBorderPenAnimation, pen.DashStyle);
+            selectedAreaBorderPenAnimation.Freeze();
+            var selectedAreaBorderPenStoryboard = new Storyboard();
+            selectedAreaBorderPenStoryboard.Children.Add(selectedAreaBorderPenAnimation);
+            selectedAreaBorderPenStoryboard.Freeze();
+            return (pen, selectedAreaBorderPenStoryboard);
+        }
+
         private void Resized(object sender, DragDeltaEventArgs e)
         {
             var thumb = (Thumb)sender;
@@ -364,7 +441,7 @@ namespace DftMosaic.Desktop.Xaml.Controllers
 
         private void DeleteButtonClicked(object sender, RoutedEventArgs e)
         {
-            this.DeleteRequested?.Invoke(this, EventArgs.Empty);
+            this.RequestDelete();
         }
 
         private void This_Loaded(object sender, RoutedEventArgs e)
@@ -381,6 +458,11 @@ namespace DftMosaic.Desktop.Xaml.Controllers
                 Source = this.corner3,
             };
             this.corner3.RaiseEvent(mouseDown);
+        }
+
+        private void RequestDelete()
+        {
+            this.DeleteRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private static void Swap(ref Thumb lhs, ref Thumb rhs)
