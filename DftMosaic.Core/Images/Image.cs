@@ -63,7 +63,7 @@ namespace DftMosaic.Core.Images
                 using var mosaiced = this.MosaicImageData(grayedOriginal32F[mosaicArea]);
                 using var saveMosaiced = new Mat(mosaiced.Rows, mosaiced.Cols, mosaicedImage.Type(), mosaiced.Data);
                 mosaicedImage[mosaicArea] = saveMosaiced;
-                mosaicedAreas.Add(new(mosaicArea, null));
+                mosaicedAreas.Add(new(mosaicArea, 0, null));
             }
 
             return new(mosaicedImage, new(MosaicType.GrayScale, mosaicedAreas));
@@ -94,7 +94,7 @@ namespace DftMosaic.Core.Images
                 using var mosaiced = this.MosaicImageData(original64F[mosaicArea]);
                 var scale = this.ScaleImage(mosaiced);
                 original64F[mosaicArea] = mosaiced * scale.Alpha + Scalar.All(scale.Beta);
-                mosaicedAreas.Add(new(mosaicArea, scale));
+                mosaicedAreas.Add(new(mosaicArea, 0, scale));
             }
             return new(original64F, new(MosaicType.Full64Color, mosaicedAreas));
         }
