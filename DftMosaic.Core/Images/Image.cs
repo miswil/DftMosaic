@@ -48,7 +48,9 @@ namespace DftMosaic.Core.Images
             var mosaicedImage = this.IsMosaiced ?
                 this.Data :
                 grayedOriginal.CvtColor(ColorConversionCodes.GRAY2BGRA);
-            var mosaicedAreas = new List<MosaicArea>();
+            var mosaicedAreas = new List<MosaicArea>(
+                this.MosaicInfo?.Areas ??
+                Enumerable.Empty<MosaicArea>());
 
             foreach (var mosaicRequestArea in mosaicRequestAreas)
             {
