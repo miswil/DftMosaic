@@ -1,4 +1,5 @@
 ﻿using OpenCvSharp;
+using System.Diagnostics;
 
 namespace DftMosaic.Core.Images
 {
@@ -19,12 +20,12 @@ namespace DftMosaic.Core.Images
             this.MosaicInfo = mosaicInfo;
         }
 
-        public Image Mosaic(Rect mosaicRequestArea, MosaicType mosaicType, bool optimizeSize = true)
+        public Image Mosaic(Rect mosaicRequestArea, double angle, MosaicType mosaicType, bool optimizeSize = true)
         {
-            return this.Mosaic(new Rect[] { mosaicRequestArea }, mosaicType, optimizeSize);
+            return this.Mosaic(new [] { new MosaicRequestArea(mosaicRequestArea, angle) }, mosaicType, optimizeSize);
         }
 
-        public Image Mosaic(IEnumerable<Rect> mosaicRequestAreas, MosaicType mosaicType, bool optimizeSize = true)
+        public Image Mosaic(IEnumerable<MosaicRequestArea> mosaicRequestAreas, MosaicType mosaicType, bool optimizeSize = true)
         {
             if (this.MosaicInfo is not null && this.MosaicInfo.Type != mosaicType)
             {
@@ -40,7 +41,7 @@ namespace DftMosaic.Core.Images
             };
         }
 
-        private Image MosaicGrayScale(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
+        private Image MosaicGrayScale(IEnumerable<MosaicRequestArea> mosaicRequestAreas, bool optimizeSize)
         {
             using var grayedOriginal = this.Data.CvtColor(ColorConversionCodes.BGRA2GRAY);
             using var grayedOriginal32F = new Mat();
@@ -48,28 +49,31 @@ namespace DftMosaic.Core.Images
             var mosaicedImage = this.IsMosaiced ?
                 this.Data :
                 grayedOriginal.CvtColor(ColorConversionCodes.GRAY2BGRA);
+            var originalSize = mosaicedImage.Size();
             var mosaicedAreas = new List<MosaicArea>(
                 this.MosaicInfo?.Areas ??
                 Enumerable.Empty<MosaicArea>());
 
             foreach (var mosaicRequestArea in mosaicRequestAreas)
             {
-                var mosaicArea = mosaicRequestArea;
+                var mosaicArea = this.RotateImage(grayedOriginal32F, mosaicRequestArea.Area, mosaicRequestArea.Angle);
                 if (optimizeSize)
                 {
-                    mosaicArea = this.DftArea(this.Data, mosaicRequestArea, optimizeSize);
+                    mosaicArea = this.DftArea(this.Data, mosaicArea, optimizeSize);
                 }
-
                 using var mosaiced = this.MosaicImageData(grayedOriginal32F[mosaicArea]);
                 using var saveMosaiced = new Mat(mosaiced.Rows, mosaiced.Cols, mosaicedImage.Type(), mosaiced.Data);
+
+                this.RotateImage(mosaicedImage, mosaicRequestArea.Angle);
                 mosaicedImage[mosaicArea] = saveMosaiced;
-                mosaicedAreas.Add(new(mosaicArea, 0, null));
+                this.UnrotateImage(mosaicedImage, mosaicRequestArea.Angle, originalSize);
+                mosaicedAreas.Add(new(mosaicRequestArea.Area, mosaicRequestArea.Angle, null));
             }
 
             return new(mosaicedImage, new(MosaicType.GrayScale, mosaicedAreas));
         }
 
-        private Image MosaicFull64Color(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
+        private Image MosaicFull64Color(IEnumerable<MosaicRequestArea> mosaicRequestAreas, bool optimizeSize)
         {
             var mosaicedAreas = new List<MosaicArea>(
                 this.MosaicInfo?.Areas ?? 
@@ -82,24 +86,26 @@ namespace DftMosaic.Core.Images
                 _ => 1.0,
             };
             this.Data.ConvertTo(original64F, MatType.CV_64F, alpha);
+            var originalSize = original64F.Size();
 
             foreach (var mosaicRequestArea in mosaicRequestAreas)
             {
-                var mosaicArea = mosaicRequestArea;
+                var mosaicArea = this.RotateImage(original64F, mosaicRequestArea.Area, mosaicRequestArea.Angle);
                 if (optimizeSize)
                 {
-                    mosaicArea = this.DftArea(this.Data, mosaicRequestArea, optimizeSize);
+                    mosaicArea = this.DftArea(this.Data, mosaicArea, optimizeSize);
                 }
 
                 using var mosaiced = this.MosaicImageData(original64F[mosaicArea]);
                 var scale = this.ScaleImage(mosaiced);
                 original64F[mosaicArea] = mosaiced * scale.Alpha + Scalar.All(scale.Beta);
-                mosaicedAreas.Add(new(mosaicArea, 0, scale));
+                this.UnrotateImage(original64F, mosaicRequestArea.Angle, originalSize);
+                mosaicedAreas.Add(new(mosaicRequestArea.Area, mosaicRequestArea.Angle, scale));
             }
             return new(original64F, new(MosaicType.Full64Color, mosaicedAreas));
         }
 
-        private Image MosaicFullColor(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
+        private Image MosaicFullColor(IEnumerable<MosaicRequestArea> mosaicRequestAreas, bool optimizeSize)
         {
             using var fullColor = this.MosaicFull64Color(mosaicRequestAreas, optimizeSize);
             var mosaiced32F = new Mat();
@@ -107,7 +113,7 @@ namespace DftMosaic.Core.Images
             return new(mosaiced32F, fullColor.MosaicInfo with { Type = MosaicType.FullColor });
         }
 
-        private Image MosaicColor(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
+        private Image MosaicColor(IEnumerable<MosaicRequestArea> mosaicRequestAreas, bool optimizeSize)
         {
             using var fullColor = this.MosaicFull64Color(mosaicRequestAreas, optimizeSize);
             var mosaiced16U = new Mat();
@@ -115,7 +121,7 @@ namespace DftMosaic.Core.Images
             return new(mosaiced16U, fullColor.MosaicInfo with { Type = MosaicType.Color });
         }
 
-        private Image MosaicShortColor(IEnumerable<Rect> mosaicRequestAreas, bool optimizeSize)
+        private Image MosaicShortColor(IEnumerable<MosaicRequestArea> mosaicRequestAreas, bool optimizeSize)
         {
             using var fullColor = this.MosaicFull64Color(mosaicRequestAreas, optimizeSize);
             var mosaiced8U = new Mat();
@@ -143,9 +149,13 @@ namespace DftMosaic.Core.Images
         private Image UnmosaicGrayScale()
         {
             var unmosaicedImage = this.Data.CvtColor(ColorConversionCodes.RGBA2GRAY);
+            var mosaicedImage = this.Data.Clone();
             foreach (var area in this.MosaicInfo.Areas.Reverse())
             {
-                using var mosaiced = this.Data[area.Area].Clone();
+                var mosaicArea = this.RotateImage(mosaicedImage, area.Area, area.Angle);
+                this.RotateImage(unmosaicedImage, area.Angle);
+
+                using var mosaiced = mosaicedImage[mosaicArea].Clone();
                 using var mosaiced32F =
                     new Mat(
                         mosaiced.Rows,
@@ -155,7 +165,10 @@ namespace DftMosaic.Core.Images
                 using var unmosaiced = this.UnmosaicImageData(mosaiced32F);
                 using var unmosaicedCvt = new Mat();
                 unmosaiced.ConvertTo(unmosaicedCvt, this.Data.Type());
-                unmosaicedImage[area.Area] = unmosaicedCvt;
+                unmosaicedImage[mosaicArea] = unmosaicedCvt;
+
+                this.UnrotateImage(mosaicedImage, area.Angle, this.Data.Size());
+                this.UnrotateImage(unmosaicedImage, area.Angle, this.Data.Size());
             }
             return new(unmosaicedImage);
         }
@@ -170,10 +183,14 @@ namespace DftMosaic.Core.Images
                     throw new InvalidOperationException("The mosaiced image has no scale information.");
                 }
 
-                using var mosaicedArea = unmosaicedImage[area.Area];
+                var mosaicArea = this.RotateImage(unmosaicedImage, area.Area, area.Angle);
+
+                using var mosaicedArea = unmosaicedImage[mosaicArea];
                 using var scaledMosaiced = (mosaicedArea - Scalar.All(area.Scale.Beta)) / area.Scale.Alpha;
                 using var unmosaicedArea = this.UnmosaicImageData(scaledMosaiced);
-                unmosaicedImage[area.Area] = unmosaicedArea;
+                unmosaicedImage[mosaicArea] = unmosaicedArea;
+
+                this.UnrotateImage(unmosaicedImage, area.Angle, this.Data.Size());
             }
             var unmosaicedImage8U = new Mat();
             unmosaicedImage.ConvertTo(unmosaicedImage8U, MatType.CV_8U, 255);
@@ -228,6 +245,42 @@ namespace DftMosaic.Core.Images
             var unmosaiced = new Mat();
             Cv2.Merge(unmosaiceds, unmosaiced);
             return unmosaiced;
+        }
+
+        private void RotateImage(Mat image, double angle)
+        {
+            this.RotateImage(image, default, angle);
+        }
+
+        private Rect RotateImage(Mat image, Rect mosaicedArea, double angle)
+        {
+            var radAngle = angle / 360 * 2 * Math.PI;
+            using var rotateMat = Cv2.GetRotationMatrix2D(new Point2f(image.Width / 2.0f, image.Height / 2.0f), angle, 1.0);
+            var rotatedWidth = (int)Math.Round(image.Width * Math.Abs(Math.Cos(radAngle)) + image.Height * Math.Abs(Math.Sin(radAngle)));
+            var rotatedHeight = (int)Math.Round(image.Width * Math.Abs(Math.Sin(radAngle)) + image.Height * Math.Abs(Math.Cos(radAngle)));
+            rotateMat.Set(0, 2, rotateMat.At<double>(0, 2) + (rotatedWidth - image.Width) / 2.0);
+            rotateMat.Set(1, 2, rotateMat.At<double>(1, 2) + (rotatedHeight - image.Height) / 2.0);
+
+            using var imageClone = image.Clone();
+            Cv2.WarpAffine(imageClone, image, rotateMat, new Size(rotatedWidth, rotatedHeight));
+
+            using var areaPosition = new Mat(3, 1, MatType.CV_64F, new double[] { mosaicedArea.X, mosaicedArea.Y, 1.0 });
+            using var areaPositionRotateMat = Cv2.GetRotationMatrix2D(new(mosaicedArea.X + mosaicedArea.Width / 2.0f, mosaicedArea.Y + mosaicedArea.Height / 2.0f), -angle, 1.0);
+            using var areaPositionRotated = (areaPositionRotateMat * areaPosition).ToMat();
+            using var rotatedAreaPosition = new Mat(3, 1, MatType.CV_64F, new double[] { areaPositionRotated.At<double>(0), areaPositionRotated.At<double>(1), 1.0 });
+            using var rotatedRotatedAreaPosition = (rotateMat * rotatedAreaPosition).ToMat();
+
+            return new Rect((int)rotatedRotatedAreaPosition.At<double>(0), (int)rotatedRotatedAreaPosition.At<double>(1), mosaicedArea.Width, mosaicedArea.Height);
+        }
+
+        private void UnrotateImage(Mat image, double angle, Size originalSize)
+        {
+            using var rotateMatInv = Cv2.GetRotationMatrix2D(new(image.Width / 2.0f, image.Height / 2.0f), -angle, 1.0);
+            rotateMatInv.Set(0, 2, rotateMatInv.At<double>(0, 2) + (originalSize.Width - image.Width) / 2.0);
+            rotateMatInv.Set(1, 2, rotateMatInv.At<double>(1, 2) + (originalSize.Height - image.Height) / 2.0);
+            
+            using var imageClone = image.Clone();
+            Cv2.WarpAffine(imageClone, image, rotateMatInv, new Size(originalSize.Width, originalSize.Height));
         }
 
         public Rect DftArea(Mat src, Rect requestRect, bool optimizeSize)

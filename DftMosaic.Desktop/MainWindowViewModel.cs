@@ -248,7 +248,7 @@ namespace DftMosaic.Desktop
             }
 
             this.MosaicedImage = this.OriginalImage.Mosaic(
-                this.MosaicAreas.Select(r => new OpenCvSharp.Rect((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height)),
+                this.MosaicAreas.Select(r => new MosaicRequestArea(new OpenCvSharp.Rect((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height), 0)),
                 this.MosaicType);
             this.MosaicedImageSource = this.MosaicedImage.Data.ToBitmapSource();
 
